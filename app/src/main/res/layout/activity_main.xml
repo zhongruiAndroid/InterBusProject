@@ -5,104 +5,128 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context=".MainActivity">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:gravity="center_vertical"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         >
-        <Button
-            android:id="@+id/btPost"
-            android:layout_width="match_parent"
-            android:layout_height="45dp"
-            android:text="post1"
-            android:textAllCaps="false"
-            android:ems="4"
-            />
-        <Button
-            android:id="@+id/btPost2"
-            android:layout_width="match_parent"
-            android:layout_height="45dp"
-            android:text="post2"
-            android:textAllCaps="false"
-            android:ems="4"
-            />
-        <CheckBox
-            android:id="@+id/cbSetEvent1"
-            android:layout_width="match_parent"
-            android:layout_height="45dp"
-            android:text="订阅1"
-            android:textAllCaps="false"
-            android:ems="4"
-            />
-        <CheckBox
-            android:id="@+id/cbSetEvent2"
-            android:layout_width="match_parent"
-            android:layout_height="45dp"
-            android:text="订阅1"
-            android:textAllCaps="false"
-            android:ems="4"
-            />
-        <CheckBox
-            android:id="@+id/cbSetEvent3"
-            android:layout_width="match_parent"
-            android:layout_height="45dp"
-            android:text="订阅2"
-            android:textAllCaps="false"
-            android:ems="4"
-            />
-    </LinearLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            >
 
-    <LinearLayout
-        android:layout_width="0dp"
+            <Button
+                android:id="@+id/btPost"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:ems="4"
+                android:text="post1"
+                android:textAllCaps="false"
+                />
+
+            <Button
+                android:id="@+id/btPost2"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:ems="4"
+                android:text="post2"
+                android:textAllCaps="false"
+                />
+
+            <CheckBox
+                android:id="@+id/cbSetEvent1"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:ems="4"
+                android:text="订阅1"
+                android:textAllCaps="false"
+                />
+
+            <CheckBox
+                android:id="@+id/cbSetEvent2"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:ems="4"
+                android:text="订阅1"
+                android:textAllCaps="false"
+                />
+
+            <CheckBox
+                android:id="@+id/cbSetEvent3"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:ems="4"
+                android:text="订阅2"
+                android:textAllCaps="false"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            >
+
+            <Button
+                android:id="@+id/btPostSticky"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:ems="4"
+                android:text="postSticky"
+                android:textAllCaps="false"
+                />
+
+            <Button
+                android:id="@+id/btPostSticky2"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:ems="4"
+                android:text="postSticky2"
+                android:textAllCaps="false"
+                />
+
+            <CheckBox
+                android:id="@+id/cbSetEventSticky1"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:ems="4"
+                android:text="订阅Sticky1"
+                android:textAllCaps="false"
+                />
+
+            <CheckBox
+                android:id="@+id/cbSetEventSticky2"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:ems="4"
+                android:text="订阅Sticky1"
+                android:textAllCaps="false"
+                />
+
+            <CheckBox
+                android:id="@+id/cbSetEventSticky3"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:ems="4"
+                android:text="订阅Sticky2"
+                android:textAllCaps="false"
+                />
+        </LinearLayout>
+
+    </LinearLayout>
+    <Button
+        android:id="@+id/btOther"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:gravity="center_vertical"
-        android:orientation="vertical"
-        >
-        <Button
-            android:id="@+id/btPostSticky"
-            android:layout_width="match_parent"
-            android:layout_height="45dp"
-            android:text="postSticky"
-            android:textAllCaps="false"
-            android:ems="4"
-            />
-        <Button
-            android:id="@+id/btPostSticky2"
-            android:layout_width="match_parent"
-            android:layout_height="45dp"
-            android:text="postSticky2"
-            android:textAllCaps="false"
-            android:ems="4"
-            />
-        <CheckBox
-            android:id="@+id/cbSetEventSticky1"
-            android:layout_width="match_parent"
-            android:layout_height="45dp"
-            android:text="订阅Sticky1"
-            android:textAllCaps="false"
-            android:ems="4"
-            />
-        <CheckBox
-            android:id="@+id/cbSetEventSticky2"
-            android:layout_width="match_parent"
-            android:layout_height="45dp"
-            android:text="订阅Sticky1"
-            android:textAllCaps="false"
-            android:ems="4"
-            />
-        <CheckBox
-            android:id="@+id/cbSetEventSticky3"
-            android:layout_width="match_parent"
-            android:layout_height="45dp"
-            android:text="订阅Sticky2"
-            android:textAllCaps="false"
-            android:ems="4"
-            />
-    </LinearLayout>
-
+        android:text="测试"
+        />
 </LinearLayout>

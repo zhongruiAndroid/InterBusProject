@@ -16,6 +16,8 @@ import com.github.interbus.InterBus;
 import com.github.rxbus.MyConsumer;
 import com.github.rxbus.RxBus;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.nio.IntBuffer;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
@@ -39,10 +41,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private InterBean interBeanSticky1;
     private InterBean interBeanSticky2;
     private InterBean interBeanSticky3;
+
+    Button btOther;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        btOther = findViewById(R.id.btOther);
+        btOther.setOnClickListener(this);
 
         btPost = findViewById(R.id.btPost);
         btPost.setOnClickListener(this);
@@ -176,7 +183,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if(isChecked){
                     cbSetEventSticky3.setTag("取消订阅Sticky1");
                     cbSetEventSticky3.setText("取消订阅Sticky1");
-                    interBeanSticky3 = InterBus.get().setEventSticky(TestEvent2.class,true, new BusCallback<TestEvent2>() {
+                    interBeanSticky3 = InterBus.get().setEventSticky(TestEvent2.class, new BusCallback<TestEvent2>() {
                         @Override
                         public void accept(TestEvent2 event) {
                             cbSetEventSticky3.setText(cbSetEventSticky3.getTag()+"--收到消息:"+event.str);
@@ -206,10 +213,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             this.str = str;
         }
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+    }
+
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btPost:
+                EventBus.getDefault().postSticky(new TestEvent("ab"));
                 InterBus.get().post(new TestEvent("android"));
                 break;
             case R.id.btPost2:
@@ -221,6 +236,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btPostSticky2:
                 InterBus.get().postSticky(new TestEvent2("StickyIOS"));
                 break;
+            case R.id.btOther:
+                startActivity(new Intent(this,TestActivity.class));
+                break;
         }
     }
+
 }
