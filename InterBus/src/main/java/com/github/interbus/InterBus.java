@@ -18,6 +18,8 @@ public class InterBus {
     private SparseArray<SparseArray<BusCallback>> sparseEvent;
     private SparseArray<SparseArray<BusCallback>> sparseStickyEvent;
 
+    private SparseArray<List> stickyBean;
+
     private InterBus() {
         sparseEvent=new SparseArray();
         sparseStickyEvent=new SparseArray();
@@ -34,31 +36,77 @@ public class InterBus {
     }
 
     public <T>InterBean setEvent(Class<T> clazz, BusCallback<T> busCallback){
+        return setTheEvent(clazz, sparseEvent, busCallback);
+    }
+    public <T>InterBean setEventSticky(Class<T> clazz, BusCallback<T> busCallback){
+        return setEventSticky(clazz,false,busCallback);
+    }
+    public <T>InterBean setEventStickyLast(Class<T> clazz, BusCallback<T> busCallback){
+        return setEventSticky(clazz,true,busCallback);
+    }
+    public <T>InterBean setEventSticky(Class<T> clazz,boolean sameStickyLastEvent, BusCallback<T> busCallback){
+        int postKey = clazz.getName().hashCode();
+        if(stickyBean!=null&&stickyBean.size()>0&&stickyBean.get(postKey)!=null){
+            if(sameStickyLastEvent){
+                List<T> list = stickyBean.get(postKey);
+                T obj = list.get(list.size() - 1);
+                if(busCallback!=null){
+                    busCallback.accept(obj);
+                }
+            }else{
+                List<T> list = stickyBean.get(postKey);
+                int size=list.size();
+                for (int i = 0; i <size; i++) {
+                    if(busCallback!=null){
+                        busCallback.accept(list.get(i));
+                    }
+                }
+            }
+        }
+        InterBean interBean = setTheEvent(clazz, sparseStickyEvent, busCallback);
+        interBean.isStickyEvent=true;
+        return interBean;
+    }
+    private <T>InterBean setTheEvent(Class<T> clazz,SparseArray<SparseArray<BusCallback>> callbackSparse, BusCallback<T> busCallback){
         String className=clazz.getName();
         int setKey = (className+System.currentTimeMillis()).hashCode();
         int postKey = className.hashCode();
 
-        SparseArray<BusCallback> sparseArray = sparseEvent.get(postKey);
+        SparseArray<BusCallback> sparseArray = callbackSparse.get(postKey);
         if(sparseArray==null){
             SparseArray<BusCallback> postSpare=new SparseArray<>();
             postSpare.put(setKey,busCallback);
-            sparseEvent.put(postKey,postSpare);
+            callbackSparse.put(postKey,postSpare);
         }else{
             sparseArray.put(setKey,busCallback);
         }
         return new InterBean(setKey,postKey,false);
     }
 
-    public void setStickyEvent(){
-
-    }
 
     public void post(Object event){
+        postEvent(event,sparseEvent);
+    }
+    public void postSticky(Object event){
         int postKey=event.getClass().getName().hashCode();
-        if(sparseEvent==null||sparseEvent.size()==0){
+        if(stickyBean==null){
+            stickyBean=new SparseArray<>();
+        }
+        if(stickyBean.get(postKey)==null){
+            List<Object> eventList = new ArrayList<>();
+            eventList.add(event);
+            stickyBean.put(postKey,eventList);
+        }else{
+            stickyBean.get(postKey).add(event);
+        }
+        postEvent(event,sparseStickyEvent);
+    }
+    private void postEvent(Object event,SparseArray<SparseArray<BusCallback>> eventSparse) {
+        int postKey=event.getClass().getName().hashCode();
+        if(eventSparse==null||eventSparse.size()==0){
             return;
         }
-        SparseArray<BusCallback> busCallbackSparseArray = sparseEvent.get(postKey);
+        SparseArray<BusCallback> busCallbackSparseArray = eventSparse.get(postKey);
         if(busCallbackSparseArray==null){
             return;
         }
@@ -69,9 +117,7 @@ public class InterBus {
             }
         }
     }
-    public void postSticky(Class clazz){
 
-    }
     public void remove(Set<InterBean> interBeanSet){
         if(interBeanSet==null||interBeanSet.size()==0){
             return;

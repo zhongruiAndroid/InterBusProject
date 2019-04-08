@@ -1,5 +1,6 @@
 package com.test.interbus;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,6 +13,8 @@ import android.widget.TextView;
 import com.github.interbus.BusCallback;
 import com.github.interbus.InterBean;
 import com.github.interbus.InterBus;
+import com.github.rxbus.MyConsumer;
+import com.github.rxbus.RxBus;
 
 import java.nio.IntBuffer;
 
@@ -33,6 +36,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private InterBean interBean3;
 
 
+    private InterBean interBeanSticky1;
+    private InterBean interBeanSticky2;
+    private InterBean interBeanSticky3;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -133,13 +139,55 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 break;
             case R.id.cbSetEventSticky1:
-
+                if(isChecked){
+                    cbSetEventSticky1.setTag("取消订阅Sticky1");
+                    cbSetEventSticky1.setText("取消订阅Sticky1");
+                    interBeanSticky1 = InterBus.get().setEventSticky(TestEvent.class, new BusCallback<TestEvent>() {
+                        @Override
+                        public void accept(TestEvent event) {
+                            cbSetEventSticky1.setText(cbSetEventSticky1.getTag()+"--收到消息:"+event.str);
+                            Log.i("====","====interBean1=="+event.str);
+                        }
+                    });
+                }else{
+                    cbSetEventSticky1.setText("订阅Sticky1");
+                    cbSetEventSticky1.setTag("订阅Sticky1");
+                    InterBus.get().remove(interBeanSticky1);
+                }
                 break;
             case R.id.cbSetEventSticky2:
-
+                if(isChecked){
+                    cbSetEventSticky2.setTag("取消订阅Sticky1");
+                    cbSetEventSticky2.setText("取消订阅Sticky1");
+                    interBeanSticky2 = InterBus.get().setEventSticky(TestEvent.class, new BusCallback<TestEvent>() {
+                        @Override
+                        public void accept(TestEvent event) {
+                            cbSetEventSticky2.setText(cbSetEventSticky2.getTag()+"--收到消息:"+event.str);
+                            Log.i("====","====interBean1=="+event.str);
+                        }
+                    });
+                }else{
+                    cbSetEventSticky2.setText("订阅Sticky1");
+                    cbSetEventSticky2.setTag("订阅Sticky1");
+                    InterBus.get().remove(interBeanSticky2);
+                }
                 break;
             case R.id.cbSetEventSticky3:
-
+                if(isChecked){
+                    cbSetEventSticky3.setTag("取消订阅Sticky1");
+                    cbSetEventSticky3.setText("取消订阅Sticky1");
+                    interBeanSticky3 = InterBus.get().setEventSticky(TestEvent2.class,true, new BusCallback<TestEvent2>() {
+                        @Override
+                        public void accept(TestEvent2 event) {
+                            cbSetEventSticky3.setText(cbSetEventSticky3.getTag()+"--收到消息:"+event.str);
+                            Log.i("====","====interBean1=="+event.str);
+                        }
+                    });
+                }else{
+                    cbSetEventSticky3.setText("订阅Sticky1");
+                    cbSetEventSticky3.setTag("订阅Sticky1");
+                    InterBus.get().remove(interBeanSticky3);
+                }
                 break;
         }
     }
@@ -162,15 +210,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btPost:
-                InterBus.get().post(new TestEvent("1"));
+                InterBus.get().post(new TestEvent("android"));
                 break;
             case R.id.btPost2:
-                InterBus.get().post(new TestEvent2("2"));
+                InterBus.get().post(new TestEvent2("IOS"));
                 break;
             case R.id.btPostSticky:
+                InterBus.get().postSticky(new TestEvent("StickyAndroid"));
                 break;
             case R.id.btPostSticky2:
-
+                InterBus.get().postSticky(new TestEvent2("StickyIOS"));
                 break;
         }
     }
