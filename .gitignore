@@ -11,3 +11,6 @@
 .externalNativeBuild
 gradle.properties
 .idea
+output.json
+!app.apk
+help.gradle
