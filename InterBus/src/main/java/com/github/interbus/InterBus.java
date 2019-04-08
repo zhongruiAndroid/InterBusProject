@@ -152,7 +152,16 @@ public class InterBus {
     public void addSubscribe(Activity activity, InterBean bean) {
         getSet(activity).add(bean);
     }
+    public void addSubscribe(Activity activity, Set<InterBean> bean) {
+        getSet(activity).addAll(bean);
+    }
 
+    public void addSubscribe(Fragment fragment, Set<InterBean> bean) {
+        if (fragment == null) {
+            new IllegalStateException("addSubscribe(fragment) fragment is null");
+        }
+        addSubscribe(fragment.getActivity(), bean);
+    }
     public void addSubscribe(Fragment fragment, InterBean bean) {
         if (fragment == null) {
             new IllegalStateException("addSubscribe(fragment) fragment is null");
