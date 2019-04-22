@@ -46,7 +46,8 @@ public class InterBus {
         if(fragment==null){
             throw new IllegalStateException("setEvent(fragment), fragment can not null");
         }
-        setEvent(fragment.getActivity(),clazz,busCallback);
+        InterBean interBean = setEvent(clazz,busCallback);
+        addSubscribe(fragment,interBean);
     }
     public <T> void setEvent(Activity activity,Class<T> clazz, BusCallback<T> busCallback) {
         if(activity==null){
@@ -63,7 +64,8 @@ public class InterBus {
         if(fragment==null){
             throw new IllegalStateException("setEventSticky(fragment), fragment can not null");
         }
-        setEventSticky(fragment.getActivity(),clazz,busCallback);
+        InterBean interBean = setEventSticky(clazz, busCallback);
+        addSubscribe(fragment,interBean);
     }
     public <T>void setEventSticky(Activity activity,Class<T> clazz, BusCallback<T> busCallback) {
         if(activity==null){
@@ -174,7 +176,12 @@ public class InterBus {
         busCallbackSparseArray.remove(interBean.setKey);
     }
 
-
+    public void addSubscribe(Fragment fragment, InterBean bean) {
+        getSet(fragment).add(bean);
+    }
+    public void addSubscribe(Fragment fragment, Set<InterBean> bean) {
+        getSet(fragment).addAll(bean);
+    }
     public void addSubscribe(Activity activity, InterBean bean) {
         getSet(activity).add(bean);
     }
@@ -182,19 +189,14 @@ public class InterBus {
         getSet(activity).addAll(bean);
     }
 
-    public void addSubscribe(Fragment fragment, Set<InterBean> bean) {
-        if (fragment == null) {
-            new IllegalStateException("addSubscribe(fragment) fragment is null");
-        }
-        addSubscribe(fragment.getActivity(), bean);
-    }
-    public void addSubscribe(Fragment fragment, InterBean bean) {
-        if (fragment == null) {
-            new IllegalStateException("addSubscribe(fragment) fragment is null");
-        }
-        addSubscribe(fragment.getActivity(), bean);
-    }
 
+    private Set getSet(Fragment fragment) {
+        if (fragment == null) {
+            new IllegalStateException("getSet(fragment) fragment is null");
+        }
+        int hashCode = fragment.getClass().getName().hashCode();
+        return getSetForHashCode(hashCode);
+    }
     private Set getSet(Activity activity) {
         if (activity == null) {
             new IllegalStateException("getSet(activity) activity is null");
@@ -238,7 +240,11 @@ public class InterBus {
         if (fragment == null) {
             new IllegalStateException("unSubscribe(fragment) fragment is null");
         }
-        unSubscribe(fragment.getActivity());
+        int hashCode = fragment.getClass().getName().hashCode();
+        Set<InterBean> interBeans = unSubscribeForHashCode(hashCode);
+        if (interBeans != null) {
+            remove(interBeans);
+        }
     }
 
 
