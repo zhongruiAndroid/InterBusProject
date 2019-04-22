@@ -42,10 +42,36 @@ public class InterBus {
         return bus;
     }
 
+    public <T>void setEvent(Fragment fragment,Class<T> clazz, BusCallback<T> busCallback) {
+        if(fragment==null){
+            throw new IllegalStateException("setEvent(fragment), fragment can not null");
+        }
+        setEvent(fragment.getActivity(),clazz,busCallback);
+    }
+    public <T> void setEvent(Activity activity,Class<T> clazz, BusCallback<T> busCallback) {
+        if(activity==null){
+            throw new IllegalStateException("setEvent(activity), activity can not null");
+        }
+        InterBean interBean = setEvent(clazz,busCallback);
+        addSubscribe(activity,interBean);
+    }
     public <T> InterBean setEvent(Class<T> clazz, BusCallback<T> busCallback) {
         return setTheEvent(clazz, sparseEvent, busCallback);
     }
 
+    public <T>void setEventSticky(Fragment fragment,Class<T> clazz, BusCallback<T> busCallback) {
+        if(fragment==null){
+            throw new IllegalStateException("setEventSticky(fragment), fragment can not null");
+        }
+        setEventSticky(fragment.getActivity(),clazz,busCallback);
+    }
+    public <T>void setEventSticky(Activity activity,Class<T> clazz, BusCallback<T> busCallback) {
+        if(activity==null){
+            throw new IllegalStateException("setEventSticky(activity), activity can not null");
+        }
+        InterBean interBean = setEventSticky(clazz, busCallback);
+        addSubscribe(activity,interBean);
+    }
     public <T> InterBean setEventSticky(Class<T> clazz, BusCallback<T> busCallback) {
         int postKey = clazz.getName().hashCode();
         if (stickyBean != null && stickyBean.size() > 0 && stickyBean.get(postKey) != null) {
