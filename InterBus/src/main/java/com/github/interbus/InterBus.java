@@ -22,6 +22,9 @@ public class InterBus {
     private SparseArrayCompat<SparseArrayCompat<BusCallback>> sparseEvent;
     private SparseArrayCompat<SparseArrayCompat<BusCallback>> sparseStickyEvent;
 
+
+    private SparseArrayCompat<BusCallback> sparseSingleEvent;
+
     private SparseArrayCompat  stickyBean;
 
     private SparseArrayCompat<Set<InterBean>> interBeanSetSparse;
@@ -29,6 +32,8 @@ public class InterBus {
     private InterBus() {
         sparseEvent = new SparseArrayCompat();
         sparseStickyEvent = new SparseArrayCompat();
+
+        sparseSingleEvent = new SparseArrayCompat();
     }
 
     public static InterBus get() {
@@ -41,6 +46,8 @@ public class InterBus {
         }
         return bus;
     }
+
+    //region   普通事件  -----------------------------------------
 
     public <T>void setEvent(Fragment fragment,Class<T> clazz, BusCallback<T> busCallback) {
         if(fragment==null){
@@ -56,9 +63,14 @@ public class InterBus {
         InterBean interBean = setEvent(clazz,busCallback);
         addSubscribe(activity,interBean);
     }
+    @Deprecated
     public <T> InterBean setEvent(Class<T> clazz, BusCallback<T> busCallback) {
         return setTheEvent(clazz, sparseEvent, busCallback);
     }
+    //endregion
+
+
+    //region   黏性事件  -----------------------------------------
 
     public <T>void setEventSticky(Fragment fragment,Class<T> clazz, BusCallback<T> busCallback) {
         if(fragment==null){
@@ -74,6 +86,7 @@ public class InterBus {
         InterBean interBean = setEventSticky(clazz, busCallback);
         addSubscribe(activity,interBean);
     }
+    @Deprecated
     public <T> InterBean setEventSticky(Class<T> clazz, BusCallback<T> busCallback) {
         int postKey = clazz.getName().hashCode();
         if (stickyBean != null && stickyBean.size() > 0 && stickyBean.get(postKey) != null) {
@@ -86,7 +99,7 @@ public class InterBus {
         interBean.isStickyEvent = true;
         return interBean;
     }
-
+    //endregion
     private <T> InterBean setTheEvent(Class<T> clazz, SparseArrayCompat<SparseArrayCompat<BusCallback>> callbackSparse, BusCallback<T> busCallback) {
         String className = clazz.getName();
         int setKey = (className + System.currentTimeMillis()).hashCode();
@@ -104,11 +117,45 @@ public class InterBus {
     }
 
 
+    //region   单一事件  -----------------------------------------
+
+    public <T>void setEventSingle(Fragment fragment,Class<T> clazz, BusCallback<T> busCallback) {
+        if(fragment==null){
+            throw new IllegalStateException("setEvent(fragment), fragment can not null");
+        }
+        InterBean interBean = setEventSingle(clazz,busCallback);
+        addSubscribe(fragment,interBean);
+    }
+    public <T> void setEventSingle(Activity activity,Class<T> clazz, BusCallback<T> busCallback) {
+        if(activity==null){
+            throw new IllegalStateException("setEvent(activity), activity can not null");
+        }
+        InterBean interBean = setEventSingle(clazz,busCallback);
+        addSubscribe(activity,interBean);
+    }
+    public  <T> InterBean setEventSingle(Class<T> clazz, BusCallback<T> busCallback) {
+        String className = clazz.getName();
+        int setKey =className.hashCode();
+        int postKey = setKey;
+        sparseSingleEvent.put(setKey, busCallback);
+        return new InterBean(setKey, postKey, false);
+    }
+    //endregion
     public void post(Object event) {
+        if(event==null){
+            return;
+        }
+        /*单一事件*/
+        postEventSingle(event,sparseSingleEvent);
+
+        /*普通事件*/
         postEvent(event, sparseEvent);
     }
 
     public void postSticky(Object event) {
+        if(event==null){
+            return;
+        }
         int postKey = event.getClass().getName().hashCode();
         if (stickyBean == null) {
             stickyBean = new SparseArrayCompat<>();
@@ -117,11 +164,21 @@ public class InterBus {
         postEvent(event, sparseStickyEvent);
     }
 
-    private void postEvent(Object event, SparseArrayCompat<SparseArrayCompat<BusCallback>> eventSparse) {
-        int postKey = event.getClass().getName().hashCode();
+    private void postEventSingle(Object event, SparseArrayCompat<BusCallback> eventSparse) {
         if (eventSparse == null || eventSparse.size() == 0) {
             return;
         }
+        int postKey = event.getClass().getName().hashCode();
+        BusCallback callback = eventSparse.get(postKey);
+        if(callback!=null){
+            callback.accept(event);
+        }
+    }
+    private void postEvent(Object event, SparseArrayCompat<SparseArrayCompat<BusCallback>> eventSparse) {
+        if (eventSparse == null || eventSparse.size() == 0) {
+            return;
+        }
+        int postKey = event.getClass().getName().hashCode();
         SparseArrayCompat<BusCallback> busCallbackSparseArray = eventSparse.get(postKey);
         if (busCallbackSparseArray == null) {
             return;
