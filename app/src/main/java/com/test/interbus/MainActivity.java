@@ -1,26 +1,18 @@
 package com.test.interbus;
 
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.TextView;
 
 import com.github.interbus.BusCallback;
 import com.github.interbus.InterBean;
 import com.github.interbus.InterBus;
-import com.github.rxbus.MyConsumer;
-import com.github.rxbus.RxBus;
 
-import org.greenrobot.eventbus.EventBus;
-
-import java.nio.IntBuffer;
-
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
+public class MainActivity extends Test implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
     Button btPost;
     Button btPost2;
     CheckBox cbSetEvent1;
@@ -46,6 +38,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i("=====","===111=="+this.getClass().hashCode());
         setContentView(R.layout.activity_main);
 
         btOther = findViewById(R.id.btOther);
@@ -226,7 +219,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btPost:
-                EventBus.getDefault().postSticky(new TestEvent("ab"));
                 InterBus.get().post(new TestEvent("android"));
                 break;
             case R.id.btPost2:
