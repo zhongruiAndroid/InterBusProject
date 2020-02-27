@@ -2,16 +2,12 @@ package com.github.interbus;
 
 import android.app.Activity;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.util.SparseArrayCompat;
-import android.util.SparseArray;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /***
  *   created by android on 2019/4/8
@@ -19,8 +15,9 @@ import java.util.Set;
 public class InterBus {
     private static InterBus bus;
     /*<postKey,<setKey>>*/
-    private SparseArrayCompat<SparseArrayCompat<BusCallback>> sparseEvent;
-    private SparseArrayCompat<SparseArrayCompat<BusCallback>> sparseStickyEvent;
+    private Map<Integer, Map<Integer, BusCallback>> mapEvent;
+    private Map<Integer, Map<Integer, BusCallback>> mapStickyEvent;
+    private Map<Integer, Set<InterBean>> interBean;
 
 
     private SparseArrayCompat<BusCallback> sparseSingleEvent;
@@ -30,8 +27,10 @@ public class InterBus {
     private SparseArrayCompat<Set<InterBean>> interBeanSetSparse;
 
     private InterBus() {
-        sparseEvent = new SparseArrayCompat();
-        sparseStickyEvent = new SparseArrayCompat();
+        mapEvent = new ConcurrentHashMap<>();
+        mapStickyEvent = new ConcurrentHashMap();
+
+        interBean = new ConcurrentHashMap();
 
         sparseSingleEvent = new SparseArrayCompat();
     }
@@ -49,12 +48,23 @@ public class InterBus {
 
     //region   普通事件  -----------------------------------------
 
-    public <T>void setEvent(Fragment fragment,Class<T> clazz, BusCallback<T> busCallback) {
-        if(fragment==null){
-            throw new IllegalStateException("setEvent(fragment), fragment can not null");
+    public <T>void setEvent(Object object,Class<T> clazz, BusCallback<T> busCallback) {
+        if(object==null){
+            throw new IllegalStateException("setEvent(object), object can not null");
         }
-        InterBean interBean = setEvent(clazz,busCallback);
-        addSubscribe(fragment,interBean);
+        String className = clazz.getName();
+        int setKey = (className + System.currentTimeMillis()).hashCode();
+        int postKey = className.hashCode();
+        Map<Integer, BusCallback> sparseArray = callbackSparse.get(postKey);
+        if (sparseArray == null) {
+            Map<Integer, BusCallback> postSpare = new ConcurrentHashMap<>();
+            postSpare.put(setKey, busCallback);
+            callbackSparse.put(postKey, postSpare);
+        } else {
+            sparseArray.put(setKey, busCallback);
+        }
+        InterBean interBean = new InterBean(setKey, postKey, false);
+        getSet(fragment).add(interBean);
     }
     public <T> void setEvent(Activity activity,Class<T> clazz, BusCallback<T> busCallback) {
         if(activity==null){
@@ -65,7 +75,7 @@ public class InterBus {
     }
     @Deprecated
     public <T> InterBean setEvent(Class<T> clazz, BusCallback<T> busCallback) {
-        return setTheEvent(clazz, sparseEvent, busCallback);
+        return setTheEvent(clazz, mapEvent, busCallback);
     }
     //endregion
 
@@ -95,19 +105,18 @@ public class InterBus {
                 busCallback.accept(obj);
             }
         }
-        InterBean interBean = setTheEvent(clazz, sparseStickyEvent, busCallback);
+        InterBean interBean = setTheEvent(clazz, mapStickyEvent, busCallback);
         interBean.isStickyEvent = true;
         return interBean;
     }
     //endregion
-    private <T> InterBean setTheEvent(Class<T> clazz, SparseArrayCompat<SparseArrayCompat<BusCallback>> callbackSparse, BusCallback<T> busCallback) {
+    private <T> InterBean setTheEvent(Class<T> clazz, Map<Integer, Map<Integer, BusCallback>> callbackSparse, BusCallback<T> busCallback) {
         String className = clazz.getName();
         int setKey = (className + System.currentTimeMillis()).hashCode();
         int postKey = className.hashCode();
-
-        SparseArrayCompat<BusCallback> sparseArray = callbackSparse.get(postKey);
+        Map<Integer, BusCallback> sparseArray = callbackSparse.get(postKey);
         if (sparseArray == null) {
-            SparseArrayCompat<BusCallback> postSpare = new SparseArrayCompat<>();
+            Map<Integer, BusCallback> postSpare = new ConcurrentHashMap<>();
             postSpare.put(setKey, busCallback);
             callbackSparse.put(postKey, postSpare);
         } else {
@@ -149,7 +158,7 @@ public class InterBus {
         postEventSingle(event,sparseSingleEvent);
 
         /*普通事件*/
-        postEvent(event, sparseEvent);
+        postEvent(event, mapEvent);
     }
 
     public void postSticky(Object event) {
@@ -161,7 +170,7 @@ public class InterBus {
             stickyBean = new SparseArrayCompat<>();
         }
         stickyBean.put(postKey, event);
-        postEvent(event, sparseStickyEvent);
+        postEvent(event, mapStickyEvent);
     }
 
     private void postEventSingle(Object event, SparseArrayCompat<BusCallback> eventSparse) {
@@ -174,12 +183,13 @@ public class InterBus {
             callback.accept(event);
         }
     }
-    private void postEvent(Object event, SparseArrayCompat<SparseArrayCompat<BusCallback>> eventSparse) {
+    private void postEvent(Object event, Map<Integer, Map<Integer, BusCallback>> eventSparse) {
         if (eventSparse == null || eventSparse.size() == 0) {
             return;
         }
+
         int postKey = event.getClass().getName().hashCode();
-        SparseArrayCompat<BusCallback> busCallbackSparseArray = eventSparse.get(postKey);
+        Map<Integer, BusCallback> busCallbackSparseArray = eventSparse.get(postKey);
         if (busCallbackSparseArray == null) {
             return;
         }
@@ -212,10 +222,10 @@ public class InterBus {
     }
 
     private void removeEvent(InterBean interBean) {
-        if (sparseEvent == null || sparseEvent.size() == 0) {
+        if (mapEvent == null || mapEvent.size() == 0) {
             return;
         }
-        SparseArrayCompat<BusCallback> busCallbackSparseArray = sparseEvent.get(interBean.postKey);
+        SparseArrayCompat<BusCallback> busCallbackSparseArray = mapEvent.get(interBean.postKey);
         if (busCallbackSparseArray == null || busCallbackSparseArray.size() == 0) {
             return;
         }
@@ -223,10 +233,10 @@ public class InterBus {
     }
 
     private void removeStickyEvent(InterBean interBean) {
-        if (sparseStickyEvent == null || sparseStickyEvent.size() == 0) {
+        if (mapStickyEvent == null || mapStickyEvent.size() == 0) {
             return;
         }
-        SparseArrayCompat<BusCallback> busCallbackSparseArray = sparseStickyEvent.get(interBean.postKey);
+        SparseArrayCompat<BusCallback> busCallbackSparseArray = mapStickyEvent.get(interBean.postKey);
         if (busCallbackSparseArray == null || busCallbackSparseArray.size() == 0) {
             return;
         }
