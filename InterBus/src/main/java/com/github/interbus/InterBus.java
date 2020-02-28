@@ -185,6 +185,33 @@ public class InterBus {
         if (object == null) {
             return;
         }
+        if(needRemoveEvent==null||needRemoveEvent.size()==0){
+            return;
+        }
+        int registerCode=object.hashCode();
+        List<InterBean> interBeans = needRemoveEvent.get(registerCode);
+        if(interBeans==null||interBeans.isEmpty()){
+            return;
+        }
+//        mapEvent
+//                mapStickyEvent
+        for(InterBean bean:interBeans){
+            boolean isStickyEvent = bean.isStickyEvent;
+            if(isStickyEvent){
+                removeEvent(true);
+            }else{
 
+            }
+        }
+
+    }
+
+    private void removeEvent(boolean isSticky) {
+        Map<Integer, List<InterBean>> integerListMap = mapStickyEvent.get(bean.postKey);
+        if(){
+
+        }else{
+
+        }
     }
 }
