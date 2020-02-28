@@ -4,6 +4,9 @@ import android.os.SystemClock;
 
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.junit.Assert.*;
 
 /**
@@ -31,7 +34,15 @@ public class ExampleUnitTest {
         System.out.println(setKey);
         System.out.println(postKey);
     }
-
+    @Test
+    public void sdafd() {
+        Set<TestA> set=new HashSet<>();
+        TestA a=new TestA();
+        TestA b=new TestA();
+        set.add(a);
+        set.add(a);
+        System.out.println(set.size()+"=============");
+    }
     public static class TestA{
 
     }
