@@ -78,7 +78,7 @@ public class InterBus {
         int postCode = clazz.getName().hashCode();
         int registerCode = object.hashCode();
 
-        InterBean interBean = new InterBean(postCode, isSticky, busCallback);
+        InterBean interBean = new InterBean(postCode, registerCode, isSticky, busCallback);
 
         if (isSticky) {
             saveEventToMap(mapStickyEvent, postCode, registerCode, interBean);
@@ -90,7 +90,7 @@ public class InterBus {
         List<InterBean> interBeans = needRemoveEvent.get(registerCode);
         if (interBeans == null) {
             interBeans = new ArrayList<>();
-            needRemoveEvent.put(registerCode,interBeans);
+            needRemoveEvent.put(registerCode, interBeans);
         }
         interBeans.add(interBean);
     }
@@ -145,73 +145,42 @@ public class InterBus {
             }
         }
     }
-
-    public void remove(Set<InterBean> interBeanSet) {
-        if (interBeanSet == null || interBeanSet.size() == 0) {
-            return;
-        }
-        for (InterBean bean : interBeanSet) {
-            remove(bean);
-        }
-    }
-
-    public void remove(InterBean interBean) {
-        if (interBean == null) {
-            return;
-        }
-        if (interBean.isStickyEvent) {
-            removeStickyEvent(interBean);
-        } else {
-            removeEvent(interBean);
-        }
-    }
-
-    private void removeEvent(InterBean interBean) {
-        if (mapEvent == null || mapEvent.size() == 0) {
-            return;
-        }
-
-    }
-
-    private void removeStickyEvent(InterBean interBean) {
-        if (mapStickyEvent == null || mapStickyEvent.size() == 0) {
-            return;
-        }
-
-    }
-
-
     public void unSubscribe(Object object) {
         if (object == null) {
             return;
         }
-        if(needRemoveEvent==null||needRemoveEvent.size()==0){
+        if (needRemoveEvent == null || needRemoveEvent.size() == 0) {
             return;
         }
-        int registerCode=object.hashCode();
+        int registerCode = object.hashCode();
         List<InterBean> interBeans = needRemoveEvent.get(registerCode);
-        if(interBeans==null||interBeans.isEmpty()){
+        if (interBeans == null || interBeans.isEmpty()) {
             return;
         }
-//        mapEvent
-//                mapStickyEvent
-        for(InterBean bean:interBeans){
-            boolean isStickyEvent = bean.isStickyEvent;
-            if(isStickyEvent){
-                removeEvent(true);
-            }else{
-
-            }
+        /*获取注册到某个object下的event*/
+        for (InterBean bean : interBeans) {
+            removeEvent(registerCode,bean);
         }
 
     }
 
-    private void removeEvent(boolean isSticky) {
-        Map<Integer, List<InterBean>> integerListMap = mapStickyEvent.get(bean.postKey);
-        if(){
-
-        }else{
-
+    private void removeEvent(int unSubscribeCode,InterBean bean) {
+        if (bean == null) {
+            return;
+        }
+        boolean isSticky = bean.isStickyEvent;
+        Map<Integer, List<InterBean>> integerListMap;
+        if (isSticky) {
+            integerListMap = mapStickyEvent.get(bean.postKey);
+        } else {
+            integerListMap = mapEvent.get(bean.postKey);
+        }
+        if(integerListMap==null||integerListMap.isEmpty()){
+            return;
+        }
+        List<InterBean> remove = integerListMap.remove(unSubscribeCode);
+        if(remove!=null){
+            remove.clear();
         }
     }
 }
