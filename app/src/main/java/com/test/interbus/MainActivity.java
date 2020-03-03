@@ -13,8 +13,6 @@ import android.widget.TextView;
 import com.github.interbus.BusCallback;
 import com.github.interbus.InterBean;
 import com.github.interbus.InterBus;
-import com.github.rxbus.MyConsumer;
-import com.github.rxbus.RxBus;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -226,7 +224,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btPost:
-                EventBus.getDefault().postSticky(new TestEvent("ab"));
                 InterBus.get().post(new TestEvent("android"));
                 break;
             case R.id.btPost2:
@@ -236,6 +233,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 InterBus.get().postSticky(new TestEvent("StickyAndroid"));
                 break;
             case R.id.btPostSticky2:
+//                EventBus.getDefault().postSticky(new TestEvent("1"));
                 InterBus.get().postSticky(new TestEvent2("StickyIOS"));
                 break;
             case R.id.btOther:

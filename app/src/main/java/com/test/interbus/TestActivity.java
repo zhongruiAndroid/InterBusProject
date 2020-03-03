@@ -9,9 +9,6 @@ import android.widget.TextView;
 import com.github.interbus.BusCallback;
 import com.github.interbus.InterBean;
 import com.github.interbus.InterBus;
-import com.github.rxbus.MyConsumer;
-import com.github.rxbus.MyDisposable;
-import com.github.rxbus.RxBus;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -19,7 +16,6 @@ import org.greenrobot.eventbus.ThreadMode;
 
 public class TestActivity extends AppCompatActivity {
 
-    private MyDisposable eventReplay;
     private TextView tv;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,19 +24,7 @@ public class TestActivity extends AppCompatActivity {
         setContentView(R.layout.activity_test);
 
         tv = findViewById(R.id.tv);
-        eventReplay = RxBus.getInstance().getEventReplay(Test.class, new MyConsumer<Test>() {
-            @Override
-            public void onAccept(Test event) {
-                tv.setText("来消息啦！");
-                Log.i("==========","==========");
-            }
-        });
-        eventReplay = RxBus.getInstance().getEventReplay(Test.class, new MyConsumer<Test>() {
-            @Override
-            public void onAccept(Test event) {
-                Log.i("==========","=====222=====");
-            }
-        });
+
 
         tv.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -78,7 +62,6 @@ public class TestActivity extends AppCompatActivity {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
         InterBus.get().unSubscribe(this);
-        RxBus.getInstance().dispose(eventReplay);
     }
     @Subscribe( sticky=true)
     public void onMessageEvent(MainActivity.TestEvent event) {
