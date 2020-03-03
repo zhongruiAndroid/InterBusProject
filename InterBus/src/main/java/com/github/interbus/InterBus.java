@@ -27,8 +27,8 @@ public class InterBus {
     private Map<Integer, Map<Integer, List<InterBean>>> mapEvent;
 
     private Map<Integer, Map<Integer, List<InterBean>>> mapStickyEvent;
-    /*先保存发送的粘性事件*/
-    private Map<Integer,Boolean> stickyPostEvent;
+    /*先保存发送的粘性事件<postkey,interbean>*/
+    private Map<Integer,InterBean> stickyPostEvent;
     /*
      * act---list<interbean>
      *  以register为键，将event保存到list里面，方便后续根据register移除
@@ -85,6 +85,11 @@ public class InterBus {
         InterBean interBean = new InterBean(postCode, registerCode, isSticky, busCallback);
 
         if (isSticky) {
+            /*检查是否已经发送过粘性事件*/
+            InterBean hasEvent = checkHasEvent(postCode);
+            if(hasEvent!=null){
+                busCallback.accept(hasEvent.stickEventObj);
+            }
             saveEventToMap(mapStickyEvent, postCode, registerCode, interBean);
         } else {
             saveEventToMap(mapEvent, postCode, registerCode, interBean);
@@ -97,6 +102,15 @@ public class InterBus {
             needRemoveEvent.put(registerCode, interBeans);
         }
         interBeans.add(interBean);
+    }
+
+    private InterBean checkHasEvent(int postCode) {
+        if(stickyPostEvent==null||stickyPostEvent.isEmpty()){
+            return null;
+        }
+        InterBean stickyEvent = stickyPostEvent.get(postCode);
+        /*不等于null就存在发送的粘性事件*/
+        return stickyEvent;
     }
 
     private void saveEventToMap(Map<Integer, Map<Integer, List<InterBean>>> mapEvent, int postCode, int registerCode, InterBean interBean) {
@@ -120,7 +134,9 @@ public class InterBus {
 
     public void postSticky(Object event) {
         int postCode = event.getClass().getName().hashCode();
-        stickyPostEvent.put(postCode,true);
+        InterBean interBean = new InterBean(postCode, 0, true, null);
+        interBean.stickEventObj=event;
+        stickyPostEvent.put(postCode,interBean);
         /*发送粘性事件*/
         getEventAndPost(event, mapStickyEvent);
     }
