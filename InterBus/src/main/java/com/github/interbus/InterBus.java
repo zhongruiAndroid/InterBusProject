@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   created by android on 2019/4/8
  */
 public class InterBus {
+    private final int REMOVE_ALL_CODE=-100;
     private static InterBus bus;
 
     /*
@@ -27,7 +28,7 @@ public class InterBus {
 
     private Map<Integer, Map<Integer, List<InterBean>>> mapStickyEvent;
     /*先保存发送的粘性事件*/
-    private Map<Integer,InterBean> stickyPostEvent;
+    private Map<Integer,Boolean> stickyPostEvent;
     /*
      * act---list<interbean>
      *  以register为键，将event保存到list里面，方便后续根据register移除
@@ -118,10 +119,37 @@ public class InterBus {
     }
 
     public void postSticky(Object event) {
+        int postCode = event.getClass().getName().hashCode();
+        stickyPostEvent.put(postCode,true);
         /*发送粘性事件*/
         getEventAndPost(event, mapStickyEvent);
     }
-
+    public void removeStickyEvent(Object event){
+        if(event==null){
+            return;
+        }
+        int postCode = event.getClass().getName().hashCode();
+        removeSticky(postCode);
+    }
+    public void removeStickyEvent(Class clazz){
+        if(clazz==null){
+            return;
+        }
+        int postCode = clazz.getName().hashCode();
+        removeSticky(postCode);
+    }
+    private void removeSticky(int postCode){
+        if(stickyPostEvent==null||stickyPostEvent.isEmpty()){
+            return;
+        }
+        stickyPostEvent.remove(postCode);
+    }
+    public void removeAllStickyEvent(){
+        if(stickyPostEvent==null||stickyPostEvent.isEmpty()){
+            return;
+        }
+        stickyPostEvent.clear();
+    }
     private void getEventAndPost(Object event, Map<Integer, Map<Integer, List<InterBean>>> mapEvent) {
         if (event == null || mapEvent == null || mapEvent.size() == 0) {
             return;
@@ -156,7 +184,7 @@ public class InterBus {
             return;
         }
         int registerCode = object.hashCode();
-        List<InterBean> interBeans = needRemoveEvent.get(registerCode);
+        List<InterBean> interBeans = needRemoveEvent.remove(registerCode);
         if (interBeans == null || interBeans.isEmpty()) {
             return;
         }
@@ -164,7 +192,26 @@ public class InterBus {
         for (InterBean bean : interBeans) {
             removeEvent(registerCode,bean);
         }
+        interBeans.clear();
+    }
 
+    public void unSubscribeAllAndSticky() {
+        removeAllStickyEvent();
+        unSubscribeAll();
+    }
+    public void unSubscribeAll() {
+        if (needRemoveEvent == null || needRemoveEvent.size() == 0) {
+            return;
+        }
+        for(List<InterBean> item:needRemoveEvent.values()){
+            if (item == null || item.isEmpty()) {
+                continue;
+            }
+            for (InterBean bean : item) {
+                removeEvent(REMOVE_ALL_CODE,bean);
+            }
+        }
+        needRemoveEvent.clear();
     }
 
     private void removeEvent(int unSubscribeCode,InterBean bean) {
@@ -179,6 +226,16 @@ public class InterBus {
             integerListMap = mapEvent.get(bean.postKey);
         }
         if(integerListMap==null||integerListMap.isEmpty()){
+            return;
+        }
+        if(unSubscribeCode==REMOVE_ALL_CODE){
+            for (List<InterBean> lastItem:integerListMap.values()){
+                if(lastItem==null||lastItem.isEmpty()){
+                    continue;
+                }
+                lastItem.clear();
+            }
+            integerListMap.clear();
             return;
         }
         List<InterBean> remove = integerListMap.remove(unSubscribeCode);
