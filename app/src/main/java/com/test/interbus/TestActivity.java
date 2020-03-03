@@ -6,7 +6,6 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.github.interbus.BusCallback;
-import com.github.interbus.InterBean;
 import com.github.interbus.InterBus;
 
 
@@ -25,13 +24,13 @@ public class TestActivity extends AppCompatActivity {
     }
 
     private void test() {
-        InterBean interBean1 = InterBus.get().setEvent(Test.class, new BusCallback<Test>() {
+         InterBus.get().setEvent(this,Test.class, new BusCallback<Test>() {
             @Override
             public void accept(Test event) {
                 Log.i("===========", "accept===========setEvent");
             }
         });
-        InterBean interBean = InterBus.get().setEventSticky(Test.class, new BusCallback<Test>() {
+         InterBus.get().setStickyEvent(this,Test.class, new BusCallback<Test>() {
             @Override
             public void accept(Test event) {
                 Log.i("===========", "accept===========setEventSticky");
@@ -39,8 +38,6 @@ public class TestActivity extends AppCompatActivity {
         });
         InterBus.get().post(new Test());
         InterBus.get().postSticky(new Test());
-        InterBus.get().addSubscribe(this,interBean1);
-        InterBus.get().addSubscribe(this,interBean);
     }
 
     @Override

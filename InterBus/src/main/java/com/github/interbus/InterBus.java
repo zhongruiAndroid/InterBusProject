@@ -88,7 +88,7 @@ public class InterBus {
             /*检查是否已经发送过粘性事件*/
             InterBean hasEvent = checkHasEvent(postCode);
             if(hasEvent!=null){
-                busCallback.accept(hasEvent.stickEventObj);
+                busCallback.accept((T)hasEvent.stickEventObj);
             }
             saveEventToMap(mapStickyEvent, postCode, registerCode, interBean);
         } else {
