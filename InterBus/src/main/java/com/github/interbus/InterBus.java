@@ -26,6 +26,8 @@ public class InterBus {
     private Map<Integer, Map<Integer, List<InterBean>>> mapEvent;
 
     private Map<Integer, Map<Integer, List<InterBean>>> mapStickyEvent;
+    /*先保存发送的粘性事件*/
+    private Map<Integer,InterBean> stickyPostEvent;
     /*
      * act---list<interbean>
      *  以register为键，将event保存到list里面，方便后续根据register移除
@@ -36,6 +38,7 @@ public class InterBus {
     private InterBus() {
         mapEvent = new ConcurrentHashMap<>();
         mapStickyEvent = new ConcurrentHashMap();
+        stickyPostEvent = new ConcurrentHashMap();
 
         needRemoveEvent = new ConcurrentHashMap();
     }
