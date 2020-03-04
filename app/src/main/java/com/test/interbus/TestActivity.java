@@ -58,7 +58,8 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
         super.onDestroy();
         InterBus.get().unSubscribe(this);
     }
-
+    int a=0;
+    int b=0;
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
@@ -68,12 +69,15 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
                 InterBus.get().setEvent(simpleEvent, EventBean.class, new BusCallback<EventBean>() {
                     @Override
                     public void accept(EventBean event) {
+                        b+=1;
+                        Log.i("=====",b+"=====普通事件:"+event.content);
                         addText(listStr,event.content);
                         setText(listStr,tvTips);
                     }
                 });
                 break;
             case R.id.btPost:
+                b=0;
                 addText(listStr,"发送普通事件");
                 setText(listStr,tvTips);
                 InterBus.get().post(new EventBean("普通消息来了"));
@@ -89,12 +93,15 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
                 InterBus.get().setStickyEvent(stickyEvent, EventStickyBean.class, new BusCallback<EventStickyBean>() {
                     @Override
                     public void accept(EventStickyBean event) {
+                        a+=1;
+                        Log.i("=====",a+"=====粘性事件:"+event.content);
                         addText(listStrSticky,event.content);
                         setText(listStrSticky,tvTipsSticky);
                     }
                 });
                 break;
             case R.id.btPostSticky:
+                a=0;
                 addText(listStrSticky,"发送粘性事件");
                 setText(listStrSticky,tvTipsSticky);
                 InterBus.get().postSticky(new EventStickyBean("粘性消息来了"));
