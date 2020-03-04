@@ -106,7 +106,7 @@ public class MainActivity extends Test implements View.OnClickListener, Compound
                             Log.i("====", "====interBean2==" + event.str);
                         }
                     });
-                    cbSetEvent2.setTag("取消订阅1");
+                    cbSetEvent2.setTag( "取消订阅1");
                     cbSetEvent2.setText("取消订阅1");
                 } else {
                     cbSetEvent2.setText("订阅1");
@@ -199,7 +199,7 @@ public class MainActivity extends Test implements View.OnClickListener, Compound
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
+        InterBus.get().unSubscribe(this);
     }
 
     @Override
