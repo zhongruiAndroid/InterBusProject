@@ -1,16 +1,8 @@
 package com.github.interbus;
 
-import android.app.Activity;
-import android.support.v4.app.Fragment;
-import android.support.v4.util.SparseArrayCompat;
-
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /***
@@ -21,17 +13,19 @@ public class InterBus {
     private static InterBus bus;
 
     /*
-     * postkey---act---list<interbean>
-     * 以post为键，将event保存到对应register的map下面,方便post发消息
+     * 第一个key为postCode(方便根据postCode取event,发消息),第二个key为registerCode
+     * 因为可能存在不同act注册相同obj消息，所以第二个map以registercode为key,也方便后续的取消某个act里面的消息订阅
      * */
+    /*普通消息event容器*/
     private Map<Integer, Map<Integer, List<InterBean>>> mapEvent;
-
+    /*粘性消息event容器*/
     private Map<Integer, Map<Integer, List<InterBean>>> mapStickyEvent;
-    /*先保存发送的粘性事件<postkey,interbean>*/
+    /*单一的消息，只保存注册的最后一个(或者最开始的一个)事件消息*/
+    private Map<Integer, InterBean> singleEvent;
+    /*先保存发送的粘性事件,key为postCode*/
     private Map<Integer, InterBean> stickyPostEvent;
     /*
-     * act---list<interbean>
-     *  以register为键，将event保存到list里面，方便后续根据register移除
+     *  key为registerCode，将event保存到list里面，方便后续取消注册时根据registerCode和postCode移除
      * */
     private Map<Integer, List<InterBean>> needRemoveEvent;
 
@@ -39,6 +33,8 @@ public class InterBus {
     private InterBus() {
         mapEvent = new ConcurrentHashMap<>();
         mapStickyEvent = new ConcurrentHashMap();
+        singleEvent = new ConcurrentHashMap();
+
         stickyPostEvent = new ConcurrentHashMap();
 
         needRemoveEvent = new ConcurrentHashMap();
@@ -96,6 +92,11 @@ public class InterBus {
         }
 
         /*将interbean也添加到这个容器中，方便unRegister时根据registerCode和postCode去移除*/
+        addEventToRegisterGroup(registerCode,interBean);
+    }
+
+    private void addEventToRegisterGroup(int registerCode,InterBean interBean) {
+        /*将interbean也添加到这个容器中，方便unRegister时根据registerCode和postCode去移除*/
         List<InterBean> interBeans = needRemoveEvent.get(registerCode);
         if (interBeans == null) {
             interBeans = new ArrayList<>();
@@ -126,15 +127,29 @@ public class InterBus {
             List<InterBean> interBeans = integerListMap.get(registerCode);
             if (interBeans == null) {
                 interBeans = new ArrayList<>();
-                integerListMap.put(registerCode,interBeans);
+                integerListMap.put(registerCode, interBeans);
             }
             interBeans.add(interBean);
         }
     }
 
     public void post(Object event) {
+        /*发送单一事件*/
+        getSingleEventAndPost(event);
         /*发送普通事件*/
         getEventAndPost(event, mapEvent);
+    }
+
+    private void getSingleEventAndPost(Object event) {
+        if(singleEvent==null||singleEvent.isEmpty()){
+            return;
+        }
+        int postKey = event.getClass().getName().hashCode();
+        InterBean bean = singleEvent.get(postKey);
+        if (bean == null || bean.busCallback == null) {
+            return;
+        }
+        bean.busCallback.accept(event);
     }
 
     public void postSticky(Object event) {
@@ -142,9 +157,86 @@ public class InterBus {
         InterBean interBean = new InterBean(postCode, 0, true, null);
         interBean.stickEventObj = event;
         stickyPostEvent.put(postCode, interBean);
+
+        /*发送单一事件*/
+        getSingleEventAndPost(event);
         /*发送粘性事件*/
         getEventAndPost(event, mapStickyEvent);
     }
+
+    /**
+     * 单一普通事件
+     */
+    public <T> void setSingleEvent(Object object, Class<T> clazz, BusCallback<T> busCallback) {
+        setSingleEvent(object, clazz, true, busCallback);
+    }
+
+    public <T> void setSingleEvent(Object object, Class<T> clazz, boolean useLastEvent, BusCallback<T> busCallback) {
+        if (object == null || clazz == null) {
+            throw new IllegalStateException("setSingleEvent(object,class,busCallback), object or class can not null");
+        }
+        saveSingleEvent(object, clazz, busCallback, useLastEvent, false);
+    }
+
+    /**
+     * 单一粘性事件
+     */
+    public <T> void setSingleStickyEvent(Object object, Class<T> clazz, BusCallback<T> busCallback) {
+        setSingleStickyEvent(object, clazz, true, busCallback);
+    }
+
+    public <T> void setSingleStickyEvent(Object object, Class<T> clazz, boolean useLastEvent, BusCallback<T> busCallback) {
+        if (object == null || clazz == null) {
+            throw new IllegalStateException("setSingleStickyEvent(object,class,busCallback), object or class can not null");
+        }
+        saveSingleEvent(object, clazz, busCallback, useLastEvent, true);
+    }
+
+    private <T> void saveSingleEvent(Object object, Class<T> clazz, BusCallback<T> busCallback, boolean useLastEvent, boolean isSticky) {
+        if (busCallback == null) {
+            return;
+        }
+        int postCode = clazz.getName().hashCode();
+        if (!useLastEvent&&singleEvent.get(postCode)!=null) {
+            //如果有多次相同的object注册，只用最开始注册的event，则不覆盖添加
+            return;
+        }
+
+        //如果有多次相同的object注册，只用最后注册的event，需要覆盖
+        int registerCode = object.hashCode();
+
+        InterBean interBean = new InterBean(postCode, registerCode, isSticky, busCallback);
+
+        if (isSticky) {
+            /*检查是否已经发送过粘性事件*/
+            InterBean hasEvent = checkHasEvent(postCode);
+            if (hasEvent != null) {
+                busCallback.accept((T) hasEvent.stickEventObj);
+            }
+        }
+        singleEvent.put(postCode,interBean);
+
+
+        /*将interbean也添加到这个容器中，方便unRegister时根据registerCode和postCode去移除*/
+        addEventToRegisterGroup(registerCode,interBean);
+    }
+
+    public void removeSingleEvent(Object event) {
+        if (event == null) {
+            return;
+        }
+        int postCode = event.getClass().getName().hashCode();
+        removeSingleEvent(postCode);
+    }
+
+    public void removeSingleEvent(Class clazz) {
+        if (clazz == null) {
+            return;
+        }
+        int postCode = clazz.getName().hashCode();
+        removeSingleEvent(postCode);
+    }
+
 
     public void removeStickyEvent(Object event) {
         if (event == null) {
@@ -203,6 +295,7 @@ public class InterBus {
         }
     }
 
+    /*取消某个对象下的事件*/
     public void unSubscribe(Object object) {
         if (object == null) {
             return;
@@ -217,16 +310,23 @@ public class InterBus {
         }
         /*获取注册到某个object下的event*/
         for (InterBean bean : interBeans) {
+            /*移除单一事件*/
+            removeSingleEvent(bean.postKey);
+            /*移除其他事件*/
             removeEvent(registerCode, bean);
+            /*移除临时保存的粘性事件对象*/
+            removeSticky(bean.postKey);
         }
         interBeans.clear();
     }
 
+    /*取消所有订阅事件+移除所有粘性事件*/
     public void unSubscribeAllAndSticky() {
         removeAllStickyEvent();
         unSubscribeAll();
     }
 
+    /*取消所有订阅的事件*/
     public void unSubscribeAll() {
         if (needRemoveEvent == null || needRemoveEvent.size() == 0) {
             return;
@@ -236,12 +336,14 @@ public class InterBus {
                 continue;
             }
             for (InterBean bean : item) {
+                removeSingleEvent(REMOVE_ALL_CODE);
                 removeEvent(REMOVE_ALL_CODE, bean);
             }
         }
         needRemoveEvent.clear();
     }
 
+    /*移除普通事件和粘性事件*/
     private void removeEvent(int unSubscribeCode, InterBean bean) {
         if (bean == null) {
             return;
@@ -269,6 +371,18 @@ public class InterBus {
         List<InterBean> remove = integerListMap.remove(unSubscribeCode);
         if (remove != null) {
             remove.clear();
+        }
+    }
+
+    /*移除单一事件*/
+    private void removeSingleEvent(int postCode) {
+        if (singleEvent == null || singleEvent.isEmpty()) {
+            return;
+        }
+        if (postCode == REMOVE_ALL_CODE) {
+            singleEvent.clear();
+        } else {
+            singleEvent.remove(postCode);
         }
     }
 }
