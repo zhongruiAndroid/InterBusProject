@@ -18,23 +18,21 @@ public class SingleEventActivity extends AppCompatActivity implements View.OnCli
     private CheckBox cbSingleType;
 
 
-    private List<String> listStr=new ArrayList<>();
-    private List<String> listStrSticky=new ArrayList<>();
+    private List<String> listStr = new ArrayList<>();
+    private List<String> listStrSticky = new ArrayList<>();
     private TextView tvTips;
     private TextView tvTipsSticky;
 
     /*这里需要在同一个act中测试两种事件，所以用了两个object，平时使用，直接传this即可(在内部类中不能直接传this,需要传类名.this,比如 TestActivity.this)*/
-    private Object simpleEvent=new Object();
-    private Object stickyEvent=new Object();
+    private Object simpleEvent = new Object();
+    private Object stickyEvent = new Object();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_single_event);
 
-        cbSingleType=findViewById(R.id.cbSingleType);
-
-
-
+        cbSingleType = findViewById(R.id.cbSingleType);
 
 
         Button btRegister = findViewById(R.id.btRegister);
@@ -48,16 +46,7 @@ public class SingleEventActivity extends AppCompatActivity implements View.OnCli
 
         tvTips = findViewById(R.id.tvTips);
 
-        Button btRegisterSticky = findViewById(R.id.btRegisterSticky);
-        btRegisterSticky.setOnClickListener(this);
 
-        Button btPostSticky = findViewById(R.id.btPostSticky);
-        btPostSticky.setOnClickListener(this);
-
-        Button btUnRegisterSticky = findViewById(R.id.btUnRegisterSticky);
-        btUnRegisterSticky.setOnClickListener(this);
-
-        tvTipsSticky = findViewById(R.id.tvTipsSticky);
 
     }
 
@@ -66,28 +55,33 @@ public class SingleEventActivity extends AppCompatActivity implements View.OnCli
         super.onDestroy();
         InterBus.get().unSubscribe(this);
     }
-    int a=0;
-    int b=0;
+
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btRegister:
-                addText(listStr,"订阅普通事件");
-                setText(listStr,tvTips);
-                InterBus.get().setSingleEvent(simpleEvent, EventBean.class, new BusCallback<EventBean>() {
+                addText(listStr, "订阅普通事件");
+                setText(listStr, tvTips);
+                InterBus.get().setSingleEvent(simpleEvent, EventBean.class, cbSingleType.isChecked(), new BusCallback<EventBean>() {
                     @Override
                     public void accept(EventBean event) {
-                        b+=1;
-                        Log.i("=====",b+"=====<单一>普通事件:"+event.content);
-                        addText(listStr,event.content);
-                        setText(listStr,tvTips);
+                        Log.i("=====", "===1=====<单一>普通事件:" + event.content);
+                        addText(listStr, event.content);
+                        setText(listStr, tvTips);
+                    }
+                });
+                InterBus.get().setSingleEvent(simpleEvent, EventBean.class, cbSingleType.isChecked(), new BusCallback<EventBean>() {
+                    @Override
+                    public void accept(EventBean event) {
+                        Log.i("=====", "===2=====<单一>普通事件:" + event.content);
+                        addText(listStr, event.content);
+                        setText(listStr, tvTips);
                     }
                 });
                 break;
             case R.id.btPost:
-                b=0;
-                addText(listStr,"发送普通事件");
-                setText(listStr,tvTips);
+                addText(listStr, "发送普通事件");
+                setText(listStr, tvTips);
                 InterBus.get().post(new EventBean("普通消息来了"));
                 break;
             case R.id.btUnRegister:
@@ -95,46 +89,22 @@ public class SingleEventActivity extends AppCompatActivity implements View.OnCli
                 listStr.clear();
                 tvTips.setText("取消普通事件订阅");
                 break;
-            case R.id.btRegisterSticky:
-                addText(listStrSticky,"订阅粘性事件");
-                setText(listStrSticky,tvTipsSticky);
-                InterBus.get().setSingleStickyEvent(stickyEvent, EventStickyBean.class, new BusCallback<EventStickyBean>() {
-                    @Override
-                    public void accept(EventStickyBean event) {
-                        a+=1;
-                        Log.i("=====",a+"=====<单一>粘性事件:"+event.content);
-                        addText(listStrSticky,event.content);
-                        setText(listStrSticky,tvTipsSticky);
-                    }
-                });
-                break;
-            case R.id.btPostSticky:
-                a=0;
-                addText(listStrSticky,"发送粘性事件");
-                setText(listStrSticky,tvTipsSticky);
-                InterBus.get().postSticky(new EventStickyBean("粘性消息来了"));
-                break;
-            case R.id.btUnRegisterSticky:
-                InterBus.get().removeSingleEvent();
-                InterBus.get().unSubscribe(stickyEvent);
-                InterBus.get().removeStickyEvent(EventStickyBean.class);
-                listStrSticky.clear();
-                tvTipsSticky.setText("取消粘性事件订阅");
-                break;
         }
     }
-    private void addText(List<String>list,String str){
-        if(list==null||list.contains(str)){
+
+    private void addText(List<String> list, String str) {
+        if (list == null || list.contains(str)) {
             return;
         }
         list.add(str);
     }
-    private void setText(List<String>list,TextView textView){
-        if(textView==null||list==null||list.isEmpty()){
+
+    private void setText(List<String> list, TextView textView) {
+        if (textView == null || list == null || list.isEmpty()) {
             return;
         }
-        StringBuilder stringBuilder=new StringBuilder();
-        for (String item:list){
+        StringBuilder stringBuilder = new StringBuilder();
+        for (String item : list) {
             stringBuilder.append("—>");
             stringBuilder.append(item);
         }

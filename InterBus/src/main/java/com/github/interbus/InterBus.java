@@ -175,48 +175,25 @@ public class InterBus {
         if (object == null || clazz == null) {
             throw new IllegalStateException("setSingleEvent(object,class,busCallback), object or class can not null");
         }
-        saveSingleEvent(object, clazz, busCallback, useLastEvent, false);
+        saveSingleEvent(object, clazz, busCallback, useLastEvent);
     }
 
-    /**
-     * 单一粘性事件
-     */
-    public <T> void setSingleStickyEvent(Object object, Class<T> clazz, BusCallback<T> busCallback) {
-        setSingleStickyEvent(object, clazz, true, busCallback);
-    }
-
-    public <T> void setSingleStickyEvent(Object object, Class<T> clazz, boolean useLastEvent, BusCallback<T> busCallback) {
-        if (object == null || clazz == null) {
-            throw new IllegalStateException("setSingleStickyEvent(object,class,busCallback), object or class can not null");
-        }
-        saveSingleEvent(object, clazz, busCallback, useLastEvent, true);
-    }
-
-    private <T> void saveSingleEvent(Object object, Class<T> clazz, BusCallback<T> busCallback, boolean useLastEvent, boolean isSticky) {
+    private <T> void saveSingleEvent(Object object, Class<T> clazz, BusCallback<T> busCallback, boolean useLastEvent ) {
         if (busCallback == null) {
             return;
         }
         int postCode = clazz.getName().hashCode();
+        //如果有多次相同的object注册，只用最后注册的event，需要覆盖
+        int registerCode = object.hashCode();
+
+        InterBean interBean = new InterBean(postCode, registerCode, false, busCallback);
+
         if (!useLastEvent&&singleEvent.get(postCode)!=null) {
             //如果有多次相同的object注册，只用最开始注册的event，则不覆盖添加
             return;
         }
 
-        //如果有多次相同的object注册，只用最后注册的event，需要覆盖
-        int registerCode = object.hashCode();
-
-        InterBean interBean = new InterBean(postCode, registerCode, isSticky, busCallback);
-
-        if (isSticky) {
-            /*检查是否已经发送过粘性事件*/
-            InterBean hasEvent = checkHasEvent(postCode);
-            if (hasEvent != null) {
-                busCallback.accept((T) hasEvent.stickEventObj);
-            }
-        }
         singleEvent.put(postCode,interBean);
-
-
         /*将interbean也添加到这个容器中，方便unRegister时根据registerCode和postCode去移除*/
         addEventToRegisterGroup(registerCode,interBean);
     }

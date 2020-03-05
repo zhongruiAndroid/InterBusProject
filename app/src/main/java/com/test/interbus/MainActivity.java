@@ -26,6 +26,7 @@ public class MainActivity extends Test implements View.OnClickListener, Compound
 
 
     Button btOther;
+    Button btOtherSingle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +36,9 @@ public class MainActivity extends Test implements View.OnClickListener, Compound
 
         btOther = findViewById(R.id.btOther);
         btOther.setOnClickListener(this);
+
+        btOtherSingle = findViewById(R.id.btOtherSingle);
+        btOtherSingle.setOnClickListener(this);
 
         btPost = findViewById(R.id.btPost);
         btPost.setOnClickListener(this);
@@ -219,6 +223,9 @@ public class MainActivity extends Test implements View.OnClickListener, Compound
                 break;
             case R.id.btOther:
                 startActivity(new Intent(this, TestActivity.class));
+                break;
+            case R.id.btOtherSingle:
+                startActivity(new Intent(this, SingleEventActivity.class));
                 break;
         }
     }
