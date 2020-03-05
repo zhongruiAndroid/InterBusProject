@@ -199,11 +199,11 @@ public class InterBus {
 
         InterBean interBean = new InterBean(postCode, registerCode, false, busCallback);
 
-        if (!useLastEvent && singleEvent.get(postCode) != null) {
+        Map<Integer, InterBean> integerInterBeanMap = singleEvent.get(postCode);
+        if (!useLastEvent && integerInterBeanMap != null&&!integerInterBeanMap.isEmpty()) {
             //如果有多次相同的object注册，只用最开始注册的event，则不覆盖添加
             return;
         }
-        Map<Integer, InterBean> integerInterBeanMap = singleEvent.get(postCode);
         if (integerInterBeanMap == null) {
             integerInterBeanMap = new ConcurrentHashMap<>(1);
             singleEvent.put(postCode, integerInterBeanMap);
