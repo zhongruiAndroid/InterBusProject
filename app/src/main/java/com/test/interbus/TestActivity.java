@@ -90,7 +90,7 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btRegisterSticky:
                 addText(listStrSticky,"订阅粘性事件");
                 setText(listStrSticky,tvTipsSticky);
-                InterBus.get().setEvent(stickyEvent, EventBean.class, new BusCallback<EventBean>() {
+       /*         InterBus.get().setEvent(stickyEvent, EventBean.class, new BusCallback<EventBean>() {
                     @Override
                     public void accept(EventBean event) {
                         a+=1;
@@ -98,8 +98,7 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
                         addText(listStrSticky,event.content);
                         setText(listStrSticky,tvTipsSticky);
                     }
-                });
-/*
+                });*/
                 InterBus.get().setStickyEvent(stickyEvent, EventStickyBean.class, new BusCallback<EventStickyBean>() {
                     @Override
                     public void accept(EventStickyBean event) {
@@ -109,18 +108,17 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
                         setText(listStrSticky,tvTipsSticky);
                     }
                 });
-*/
                 break;
             case R.id.btPostSticky:
                 a=0;
                 addText(listStrSticky,"发送粘性事件");
                 setText(listStrSticky,tvTipsSticky);
-                InterBus.get().post(new EventBean("粘性消息来了"));
-//                InterBus.get().postSticky(new EventStickyBean("粘性消息来了"));
+//                InterBus.get().post(new EventBean("粘性消息来了"));
+                InterBus.get().postSticky(new EventStickyBean("粘性消息来了"));
                 break;
             case R.id.btUnRegisterSticky:
                 InterBus.get().unSubscribe(stickyEvent);
-//                InterBus.get().removeStickyEvent(EventStickyBean.class);
+                InterBus.get().removeStickyEvent(EventStickyBean.class);
                 listStrSticky.clear();
                 tvTipsSticky.setText("取消粘性事件订阅");
                 break;

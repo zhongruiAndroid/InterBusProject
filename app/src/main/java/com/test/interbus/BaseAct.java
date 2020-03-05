@@ -8,7 +8,7 @@ import android.util.Log;
 /***
  *   created by android on 2019/4/8
  */
-public class Test extends AppCompatActivity {
+public class BaseAct extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

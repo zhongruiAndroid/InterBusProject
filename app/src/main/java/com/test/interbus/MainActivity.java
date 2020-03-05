@@ -11,7 +11,7 @@ import android.widget.CompoundButton;
 import com.github.interbus.BusCallback;
 import com.github.interbus.InterBus;
 
-public class MainActivity extends Test implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
+public class MainActivity extends BaseAct implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
     Button btPost;
     Button btPost2;
     CheckBox cbSetEvent1;
