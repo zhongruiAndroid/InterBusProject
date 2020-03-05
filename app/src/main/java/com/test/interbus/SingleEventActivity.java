@@ -24,8 +24,8 @@ public class SingleEventActivity extends AppCompatActivity implements View.OnCli
     private TextView tvTipsSticky;
 
     /*这里需要在同一个act中测试两种事件，所以用了两个object，平时使用，直接传this即可(在内部类中不能直接传this,需要传类名.this,比如 TestActivity.this)*/
-    private Object simpleEvent = new Object();
-    private Object stickyEvent = new Object();
+    private Object simpleEvent=11;
+    private Object stickyEvent=22;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

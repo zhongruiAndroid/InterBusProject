@@ -21,8 +21,8 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
     private TextView tvTipsSticky;
 
     /*这里需要在同一个act中测试两种事件，所以用了两个object，平时使用，直接传this即可(在内部类中不能直接传this,需要传类名.this,比如 TestActivity.this)*/
-    private Object simpleEvent=new Object();
-    private Object stickyEvent=new Object();
+    private Object simpleEvent=1;
+    private Object stickyEvent=2;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,6 +90,16 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btRegisterSticky:
                 addText(listStrSticky,"订阅粘性事件");
                 setText(listStrSticky,tvTipsSticky);
+                InterBus.get().setEvent(stickyEvent, EventBean.class, new BusCallback<EventBean>() {
+                    @Override
+                    public void accept(EventBean event) {
+                        a+=1;
+                        Log.i("=====",a+"=====粘性事件:"+event.content);
+                        addText(listStrSticky,event.content);
+                        setText(listStrSticky,tvTipsSticky);
+                    }
+                });
+/*
                 InterBus.get().setStickyEvent(stickyEvent, EventStickyBean.class, new BusCallback<EventStickyBean>() {
                     @Override
                     public void accept(EventStickyBean event) {
@@ -99,16 +109,18 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
                         setText(listStrSticky,tvTipsSticky);
                     }
                 });
+*/
                 break;
             case R.id.btPostSticky:
                 a=0;
                 addText(listStrSticky,"发送粘性事件");
                 setText(listStrSticky,tvTipsSticky);
-                InterBus.get().postSticky(new EventStickyBean("粘性消息来了"));
+                InterBus.get().post(new EventBean("粘性消息来了"));
+//                InterBus.get().postSticky(new EventStickyBean("粘性消息来了"));
                 break;
             case R.id.btUnRegisterSticky:
                 InterBus.get().unSubscribe(stickyEvent);
-                InterBus.get().removeStickyEvent(EventStickyBean.class);
+//                InterBus.get().removeStickyEvent(EventStickyBean.class);
                 listStrSticky.clear();
                 tvTipsSticky.setText("取消粘性事件订阅");
                 break;
