@@ -14,6 +14,8 @@ import com.test.interbus.test.BaseObj;
 import com.test.interbus.test.TestObj;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends BaseAct implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
     Button btPost;
@@ -83,7 +85,16 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
 
 
     private void test() {
-
+        InterBus.get().setEvent("1", List.class, new BusCallback<List>() {
+            @Override
+            public void accept(List event) {
+                Log.i("=====","=====accept");
+            }
+        });
+        List<String>list=new ArrayList<>();
+        List<Integer>list2=new ArrayList<>();
+        InterBus.get().post(list);
+        InterBus.get().post(list2);
         InterBus.get().setEvent(this, TestEvent.class, null);
     }
 

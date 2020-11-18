@@ -88,6 +88,10 @@ public class ExampleUnitTest {
 
     @Test
     public void sdddafd() {
+        System.out.println("".length());
+        System.out.println(" ".length());
+        System.out.println(" ".replace(" ","").length());
+        System.out.println("   ".replace(" ","").length());
         System.out.println(TestObj.class.getSuperclass());
         System.out.println(TestObj.class.getGenericSuperclass());
         System.out.println(TestObj.class.getGenericInterfaces());
