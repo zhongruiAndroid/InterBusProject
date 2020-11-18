@@ -9,7 +9,12 @@ import android.widget.TextView;
 
 import com.github.interbus.BusCallback;
 import com.github.interbus.InterBus;
+import com.test.interbus.test.BaseObj;
+import com.test.interbus.test.TestObj;
 
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +31,12 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        testObj(new BusCallback<int[]>() {
+            @Override
+            public void accept(int[] event) {
+
+            }
+        });
         setContentView(R.layout.activity_test);
 
         Button btRegister = findViewById(R.id.btRegister);
@@ -53,6 +64,39 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
+    private void testObj(BusCallback<int[]> busCallback) {
+        Type[] genericSuperclass = busCallback.getClass().getGenericInterfaces();
+        for (Type type:genericSuperclass){
+            if (type instanceof ParameterizedType) {
+                ParameterizedType parameterized = (ParameterizedType) type;
+                Type actualTypeArgument = parameterized.getActualTypeArguments()[0];
+                if(actualTypeArgument instanceof GenericArrayType){
+                    GenericArrayType newType = (GenericArrayType) actualTypeArgument;
+                    String name = ((Class) newType.getGenericComponentType()).getName();
+                    Log.i("=====",int[].class.getName()+"=====testObj1===="+name);
+                }else{
+                    String name = ((Class) parameterized.getActualTypeArguments()[0]).getName();
+                    Log.i("=====",int[].class.getName()+"=====testObj2===="+name);
+                }
+            }
+        }
+        if(true){
+            return;
+        }
+        Log.i("=====","=============================================");
+        Log.i("=====","====="+busCallback.getClass().getSuperclass());
+        Log.i("=====","====="+busCallback.getClass().getGenericSuperclass());
+        Type[] genericInterfaces = busCallback.getClass().getGenericInterfaces();
+        Type[] genericInterfaces1 = busCallback.getClass().getInterfaces();
+        for (Type type:genericInterfaces){
+            Log.i("=====",type.toString()+"=Type===="+type.getClass().getGenericSuperclass());
+        }
+        Log.i("=====","=============================================");
+
+//            ParameterizedType superClass = (ParameterizedType) busCallback.getClass().getGenericSuperclass();
+//        Type actualTypeArgument = superClass.getActualTypeArguments()[0];
+//        Log.i("=====","====="+actualTypeArgument.toString());
+    }
     @Override
     protected void onDestroy() {
         super.onDestroy();

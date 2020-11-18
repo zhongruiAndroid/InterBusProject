@@ -78,4 +78,18 @@ public class ExampleUnitTest {
     public static class TestB{
 
     }
+
+    class TestObj extends Base<ExampleUnitTest>{
+
+    }
+    class Base<T>{
+
+    }
+
+    @Test
+    public void sdddafd() {
+        System.out.println(TestObj.class.getSuperclass());
+        System.out.println(TestObj.class.getGenericSuperclass());
+        System.out.println(TestObj.class.getGenericInterfaces());
+    }
 }

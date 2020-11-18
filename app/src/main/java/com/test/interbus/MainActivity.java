@@ -10,6 +10,10 @@ import android.widget.CompoundButton;
 
 import com.github.interbus.BusCallback;
 import com.github.interbus.InterBus;
+import com.test.interbus.test.BaseObj;
+import com.test.interbus.test.TestObj;
+
+import java.lang.reflect.Type;
 
 public class MainActivity extends BaseAct implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
     Button btPost;
@@ -76,6 +80,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
 
 
     }
+
 
     private void test() {
 
