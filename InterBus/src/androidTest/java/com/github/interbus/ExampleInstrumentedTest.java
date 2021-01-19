@@ -4,6 +4,8 @@ import android.content.Context;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -22,5 +24,16 @@ public class ExampleInstrumentedTest {
         Context appContext = InstrumentationRegistry.getTargetContext();
 
         assertEquals("com.github.interbus.test", appContext.getPackageName());
+    }
+    @Test
+    public void sdasdfd() {
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject("{f: \"123\"}");
+            final String fData = jsonObject.optString("f");
+            System.out.println(fData+":==");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -1,39 +1,45 @@
 package com.github.interbus;
 
-import android.app.Activity;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.util.SparseArrayCompat;
-import android.util.SparseArray;
-
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /***
  *   created by android on 2019/4/8
  */
 public class InterBus {
+    private final int REMOVE_ALL_FLAG = -100;
     private static InterBus bus;
-    /*<postKey,<setKey>>*/
-    private SparseArrayCompat<SparseArrayCompat<BusCallback>> sparseEvent;
-    private SparseArrayCompat<SparseArrayCompat<BusCallback>> sparseStickyEvent;
+    private Object[] objects = new Object[0];
+    private Object[] objectSticky = new Object[0];
+    /*
+     * 第一个key为postCode(方便根据postCode取event,发消息),第二个key为registerCode
+     * 因为可能存在不同act注册相同obj消息，所以第二个map以registercode为key,也方便后续的取消某个act里面的消息订阅
+     * */
+    /*普通消息event容器*/
+    private Map<Integer, Map<Integer, List<InterBean>>> mapEvent;
+    /*粘性消息event容器*/
+    private Map<Integer, Map<Integer, List<InterBean>>> mapStickyEvent;
+    /*单一的消息，只保存注册的最后一个(或者最开始的一个)事件消息*/
+    private Map<Integer, Map<Integer, InterBean>> singleEvent;
+    /*先保存发送的粘性事件,key为postCode*/
+    private Map<Integer, InterBean> stickyPostEvent;
+    /*
+     *  key为registerCode，将event保存到list里面，方便后续取消注册时根据registerCode和postCode移除
+     * */
+    private Map<Integer, List<InterBean>> needRemoveEvent;
 
-
-    private SparseArrayCompat<BusCallback> sparseSingleEvent;
-
-    private SparseArrayCompat  stickyBean;
-
-    private SparseArrayCompat<Set<InterBean>> interBeanSetSparse;
 
     private InterBus() {
-        sparseEvent = new SparseArrayCompat();
-        sparseStickyEvent = new SparseArrayCompat();
+        mapEvent = new ConcurrentHashMap<>();
+        mapStickyEvent = new ConcurrentHashMap();
+        singleEvent = new ConcurrentHashMap();
 
-        sparseSingleEvent = new SparseArrayCompat();
+        stickyPostEvent = new ConcurrentHashMap();
+
+        needRemoveEvent = new ConcurrentHashMap();
     }
 
     public static InterBus get() {
@@ -47,262 +53,348 @@ public class InterBus {
         return bus;
     }
 
-    //region   普通事件  -----------------------------------------
-
-    public <T>void setEvent(Fragment fragment,Class<T> clazz, BusCallback<T> busCallback) {
-        if(fragment==null){
-            throw new IllegalStateException("setEvent(fragment), fragment can not null");
+    /**
+     * 普通事件
+     */
+    public <T> void setEvent(Object object, Class<T> clazz, BusCallback<T> busCallback) {
+        if (object == null || clazz == null) {
+            throw new IllegalStateException("setEvent(object,class,busCallback), object or class can not null");
         }
-        InterBean interBean = setEvent(clazz,busCallback);
-        addSubscribe(fragment,interBean);
+        int postCode = clazz.getName().hashCode();
+        saveEvent(object, postCode, busCallback, false);
     }
-    public <T> void setEvent(Activity activity,Class<T> clazz, BusCallback<T> busCallback) {
-        if(activity==null){
-            throw new IllegalStateException("setEvent(activity), activity can not null");
-        }
-        InterBean interBean = setEvent(clazz,busCallback);
-        addSubscribe(activity,interBean);
-    }
-    @Deprecated
-    public <T> InterBean setEvent(Class<T> clazz, BusCallback<T> busCallback) {
-        return setTheEvent(clazz, sparseEvent, busCallback);
-    }
-    //endregion
 
-
-    //region   黏性事件  -----------------------------------------
-
-    public <T>void setEventSticky(Fragment fragment,Class<T> clazz, BusCallback<T> busCallback) {
-        if(fragment==null){
-            throw new IllegalStateException("setEventSticky(fragment), fragment can not null");
-        }
-        InterBean interBean = setEventSticky(clazz, busCallback);
-        addSubscribe(fragment,interBean);
+    public <T> void setEvent(Object object, int postKey, BusCallback<T> busCallback) {
+        saveEvent(object, postKey, busCallback, false);
     }
-    public <T>void setEventSticky(Activity activity,Class<T> clazz, BusCallback<T> busCallback) {
-        if(activity==null){
-            throw new IllegalStateException("setEventSticky(activity), activity can not null");
-        }
-        InterBean interBean = setEventSticky(clazz, busCallback);
-        addSubscribe(activity,interBean);
+
+    /**
+     * 粘性事件
+     */
+    public <T> void setStickyEvent(Object object, int postKey, BusCallback<T> busCallback) {
+        saveEvent(object, postKey, busCallback, true);
     }
-    @Deprecated
-    public <T> InterBean setEventSticky(Class<T> clazz, BusCallback<T> busCallback) {
-        int postKey = clazz.getName().hashCode();
-        if (stickyBean != null && stickyBean.size() > 0 && stickyBean.get(postKey) != null) {
-            T obj = (T) stickyBean.get(postKey);
-            if (busCallback != null) {
-                busCallback.accept(obj);
+    public <T> void setStickyEvent(Object object, Class<T> clazz, BusCallback<T> busCallback) {
+        if (object == null || clazz == null) {
+            throw new IllegalStateException("setStickyEvent(object,class,busCallback), object or class can not null");
+        }
+        int postCode = clazz.getName().hashCode();
+        saveEvent(object, postCode, busCallback, true);
+    }
+
+    private <T> void saveEvent(Object object, int postCode, BusCallback<T> busCallback, boolean isSticky) {
+        if (busCallback == null) {
+            return;
+        }
+        int registerCode = object.hashCode();
+
+        InterBean interBean = new InterBean(postCode, registerCode, isSticky, busCallback);
+
+        if (isSticky) {
+            /*检查是否已经发送过粘性事件*/
+            InterBean hasEvent = checkHasEvent(postCode);
+            if (hasEvent != null) {
+                busCallback.accept((T) hasEvent.stickEventObj);
             }
-        }
-        InterBean interBean = setTheEvent(clazz, sparseStickyEvent, busCallback);
-        interBean.isStickyEvent = true;
-        return interBean;
-    }
-    //endregion
-    private <T> InterBean setTheEvent(Class<T> clazz, SparseArrayCompat<SparseArrayCompat<BusCallback>> callbackSparse, BusCallback<T> busCallback) {
-        String className = clazz.getName();
-        int setKey = (className + System.currentTimeMillis()).hashCode();
-        int postKey = className.hashCode();
-
-        SparseArrayCompat<BusCallback> sparseArray = callbackSparse.get(postKey);
-        if (sparseArray == null) {
-            SparseArrayCompat<BusCallback> postSpare = new SparseArrayCompat<>();
-            postSpare.put(setKey, busCallback);
-            callbackSparse.put(postKey, postSpare);
+            saveEventToMap(mapStickyEvent, postCode, registerCode, interBean);
         } else {
-            sparseArray.put(setKey, busCallback);
+            saveEventToMap(mapEvent, postCode, registerCode, interBean);
         }
-        return new InterBean(setKey, postKey, false);
+
+        /*将interbean也添加到这个容器中，方便unRegister时根据registerCode和postCode去移除*/
+        addEventToRegisterGroup(registerCode, interBean);
     }
 
-
-    //region   单一事件  -----------------------------------------
-
-    public <T>void setEventSingle(Fragment fragment,Class<T> clazz, BusCallback<T> busCallback) {
-        if(fragment==null){
-            throw new IllegalStateException("setEvent(fragment), fragment can not null");
-        }
-        InterBean interBean = setEventSingle(clazz,busCallback);
-        addSubscribe(fragment,interBean);
-    }
-    public <T> void setEventSingle(Activity activity,Class<T> clazz, BusCallback<T> busCallback) {
-        if(activity==null){
-            throw new IllegalStateException("setEvent(activity), activity can not null");
-        }
-        InterBean interBean = setEventSingle(clazz,busCallback);
-        addSubscribe(activity,interBean);
-    }
-    public  <T> InterBean setEventSingle(Class<T> clazz, BusCallback<T> busCallback) {
-        String className = clazz.getName();
-        int setKey =className.hashCode();
-        int postKey = setKey;
-        sparseSingleEvent.put(setKey, busCallback);
-        return new InterBean(setKey, postKey, false);
-    }
-    //endregion
-    public void post(Object event) {
-        if(event==null){
-            return;
-        }
-        /*单一事件*/
-        postEventSingle(event,sparseSingleEvent);
-
-        /*普通事件*/
-        postEvent(event, sparseEvent);
-    }
-
-    public void postSticky(Object event) {
-        if(event==null){
-            return;
-        }
-        int postKey = event.getClass().getName().hashCode();
-        if (stickyBean == null) {
-            stickyBean = new SparseArrayCompat<>();
-        }
-        stickyBean.put(postKey, event);
-        postEvent(event, sparseStickyEvent);
-    }
-
-    private void postEventSingle(Object event, SparseArrayCompat<BusCallback> eventSparse) {
-        if (eventSparse == null || eventSparse.size() == 0) {
-            return;
-        }
-        int postKey = event.getClass().getName().hashCode();
-        BusCallback callback = eventSparse.get(postKey);
-        if(callback!=null){
-            callback.accept(event);
-        }
-    }
-    private void postEvent(Object event, SparseArrayCompat<SparseArrayCompat<BusCallback>> eventSparse) {
-        if (eventSparse == null || eventSparse.size() == 0) {
-            return;
-        }
-        int postKey = event.getClass().getName().hashCode();
-        SparseArrayCompat<BusCallback> busCallbackSparseArray = eventSparse.get(postKey);
-        if (busCallbackSparseArray == null) {
-            return;
-        }
-        for (int i = 0, size = busCallbackSparseArray.size(); i < size; i++) {
-            BusCallback callback = busCallbackSparseArray.valueAt(i);
-            if (callback != null) {
-                callback.accept(event);
+    private void addEventToRegisterGroup(int registerCode, InterBean interBean) {
+        synchronized (objectSticky) {
+            /*将interbean也添加到这个容器中，方便unRegister时根据registerCode和postCode去移除*/
+            List<InterBean> interBeans = needRemoveEvent.get(registerCode);
+            if (interBeans == null) {
+                interBeans = new ArrayList<>();
+                needRemoveEvent.put(registerCode, interBeans);
             }
+            interBeans.add(interBean);
         }
     }
 
-    public void remove(Set<InterBean> interBeanSet) {
-        if (interBeanSet == null || interBeanSet.size() == 0) {
-            return;
-        }
-        for (InterBean bean : interBeanSet) {
-            remove(bean);
-        }
-    }
-
-    public void remove(InterBean interBean) {
-        if (interBean == null) {
-            return;
-        }
-        if (interBean.isStickyEvent) {
-            removeStickyEvent(interBean);
-        } else {
-            removeEvent(interBean);
-        }
-    }
-
-    private void removeEvent(InterBean interBean) {
-        if (sparseEvent == null || sparseEvent.size() == 0) {
-            return;
-        }
-        SparseArrayCompat<BusCallback> busCallbackSparseArray = sparseEvent.get(interBean.postKey);
-        if (busCallbackSparseArray == null || busCallbackSparseArray.size() == 0) {
-            return;
-        }
-        busCallbackSparseArray.remove(interBean.setKey);
-    }
-
-    private void removeStickyEvent(InterBean interBean) {
-        if (sparseStickyEvent == null || sparseStickyEvent.size() == 0) {
-            return;
-        }
-        SparseArrayCompat<BusCallback> busCallbackSparseArray = sparseStickyEvent.get(interBean.postKey);
-        if (busCallbackSparseArray == null || busCallbackSparseArray.size() == 0) {
-            return;
-        }
-        busCallbackSparseArray.remove(interBean.setKey);
-    }
-
-    public void addSubscribe(Fragment fragment, InterBean bean) {
-        getSet(fragment).add(bean);
-    }
-    public void addSubscribe(Fragment fragment, Set<InterBean> bean) {
-        getSet(fragment).addAll(bean);
-    }
-    public void addSubscribe(Activity activity, InterBean bean) {
-        getSet(activity).add(bean);
-    }
-    public void addSubscribe(Activity activity, Set<InterBean> bean) {
-        getSet(activity).addAll(bean);
-    }
-
-
-    private Set getSet(Fragment fragment) {
-        if (fragment == null) {
-            new IllegalStateException("getSet(fragment) fragment is null");
-        }
-        int hashCode = fragment.getClass().getName().hashCode();
-        return getSetForHashCode(hashCode);
-    }
-    private Set getSet(Activity activity) {
-        if (activity == null) {
-            new IllegalStateException("getSet(activity) activity is null");
-        }
-        int hashCode = activity.getClass().getName().hashCode();
-        return getSetForHashCode(hashCode);
-    }
-
-    private Set getSetForHashCode(int hashCode) {
-        if (interBeanSetSparse == null) {
-            interBeanSetSparse = new SparseArrayCompat<>();
-        }
-        Set<InterBean> interBeanSet = interBeanSetSparse.get(hashCode);
-        if (interBeanSet == null) {
-            interBeanSet = new HashSet<>();
-            interBeanSetSparse.put(hashCode, interBeanSet);
-        }
-        return interBeanSet;
-    }
-
-    private Set<InterBean> unSubscribeForHashCode(int hashCode) {
-        if (interBeanSetSparse == null) {
+    private InterBean checkHasEvent(int postCode) {
+        if (stickyPostEvent == null || stickyPostEvent.isEmpty()) {
             return null;
         }
-        Set<InterBean> interBeanSet = interBeanSetSparse.get(hashCode);
-        return interBeanSet;
+        InterBean stickyEvent = stickyPostEvent.get(postCode);
+        /*不等于null就存在发送的粘性事件*/
+        return stickyEvent;
     }
 
-    public void unSubscribe(Activity activity) {
-        if (activity == null) {
-            new IllegalStateException("unSubscribe(activity) activity is null");
-        }
-        int hashCode = activity.getClass().getName().hashCode();
-        Set<InterBean> interBeans = unSubscribeForHashCode(hashCode);
-        if (interBeans != null) {
-            remove(interBeans);
+    private void saveEventToMap(Map<Integer, Map<Integer, List<InterBean>>> mapEvent, int postCode, int registerCode, InterBean interBean) {
+        synchronized (objects) {
+            Map<Integer, List<InterBean>> integerListMap = mapEvent.get(postCode);
+            if (integerListMap == null) {
+                integerListMap = new LinkedHashMap<>();
+                List<InterBean> interBeans = new ArrayList<>();
+                interBeans.add(interBean);
+                integerListMap.put(registerCode, interBeans);
+
+                mapEvent.put(postCode, integerListMap);
+            } else {
+                List<InterBean> interBeans = integerListMap.get(registerCode);
+                if (interBeans == null) {
+                    interBeans = new ArrayList<>();
+                    integerListMap.put(registerCode, interBeans);
+                }
+                interBeans.add(interBean);
+            }
         }
     }
 
-    public void unSubscribe(Fragment fragment) {
-        if (fragment == null) {
-            new IllegalStateException("unSubscribe(fragment) fragment is null");
+    public void post(int postKey) {
+        post(postKey, postKey);
+    }
+
+    public void post(Object event) {
+        if (event == null) {
+            return;
         }
-        int hashCode = fragment.getClass().getName().hashCode();
-        Set<InterBean> interBeans = unSubscribeForHashCode(hashCode);
-        if (interBeans != null) {
-            remove(interBeans);
+        int postKey = event.getClass().getName().hashCode();
+        post(postKey, event);
+    }
+
+    public void post(int postKey, Object event) {
+        /*发送单一事件*/
+        getSingleEventAndPost(postKey, event);
+        /*发送普通事件*/
+        getEventAndPost(postKey, event, mapEvent);
+    }
+
+    private void getSingleEventAndPost(int postKey, Object event) {
+        if (singleEvent == null || singleEvent.isEmpty()) {
+            return;
+        }
+        Map<Integer, InterBean> integerInterBeanMap = singleEvent.get(postKey);
+        if (integerInterBeanMap == null || integerInterBeanMap.isEmpty()) {
+            return;
+        }
+        for (InterBean bean : integerInterBeanMap.values()) {
+            if (bean == null || bean.busCallback == null) {
+                continue;
+            }
+            bean.busCallback.accept(event);
+        }
+    }
+
+    public void postSticky(int postKey) {
+        postSticky(postKey, postKey);
+    }
+    public void postSticky(Object event) {
+        if (event == null) {
+            return;
+        }
+        int postKey = event.getClass().getName().hashCode();
+        postSticky(postKey, event);
+    }
+
+    public void postSticky(int postKey, Object event) {
+        InterBean interBean = new InterBean(postKey, 0, true, null);
+        interBean.stickEventObj = event;
+        stickyPostEvent.put(postKey, interBean);
+
+        /*发送单一事件*/
+        getSingleEventAndPost(postKey, event);
+        /*发送粘性事件*/
+        getEventAndPost(postKey, event, mapStickyEvent);
+    }
+
+    /**
+     * 单一普通事件
+     */
+    public <T> void setSingleEvent(Object object,int postKey, BusCallback<T> busCallback) {
+        setSingleEvent(object, postKey, true, busCallback);
+    }
+    public <T> void setSingleEvent(Object object, Class<T> clazz, BusCallback<T> busCallback) {
+        setSingleEvent(object, clazz, true, busCallback);
+    }
+
+    public <T> void setSingleEvent(Object object, int postKey, boolean useLastEvent, BusCallback<T> busCallback) {
+        saveSingleEvent(object, postKey, busCallback, useLastEvent);
+    }
+    public <T> void setSingleEvent(Object object, Class<T> clazz, boolean useLastEvent, BusCallback<T> busCallback) {
+        if (object == null || clazz == null) {
+            throw new IllegalStateException("setSingleEvent(object,class,busCallback), object or class can not null");
+        }
+        int postCode = clazz.getName().hashCode();
+        saveSingleEvent(object, postCode, busCallback, useLastEvent);
+    }
+
+    private <T> void saveSingleEvent(Object object, int postKey, BusCallback<T> busCallback, boolean useLastEvent) {
+        if (busCallback == null) {
+            return;
+        }
+        //如果有多次相同的object注册，只用最后注册的event，需要覆盖
+        int registerCode = object.hashCode();
+
+        InterBean interBean = new InterBean(postKey, registerCode, false, busCallback);
+
+        Map<Integer, InterBean> integerInterBeanMap = singleEvent.get(postKey);
+        if (!useLastEvent && integerInterBeanMap != null && !integerInterBeanMap.isEmpty()) {
+            //如果有多次相同的object注册，只用最开始注册的event，则不覆盖添加
+            return;
+        }
+        if (integerInterBeanMap == null) {
+            integerInterBeanMap = new ConcurrentHashMap<>(1);
+            singleEvent.put(postKey, integerInterBeanMap);
+        }
+        integerInterBeanMap.put(registerCode, interBean);
+
+        /*将interbean也添加到这个容器中，方便unRegister时根据registerCode和postCode去移除*/
+        addEventToRegisterGroup(registerCode, interBean);
+    }
+
+
+    public void removeStickyEvent(Object event) {
+        if (event == null) {
+            return;
+        }
+        int postCode = event.getClass().getName().hashCode();
+        removeSticky(postCode);
+    }
+
+    public void removeStickyEvent(Class clazz) {
+        if (clazz == null) {
+            return;
+        }
+        int postCode = clazz.getName().hashCode();
+        removeSticky(postCode);
+    }
+
+    private void removeSticky(int postCode) {
+        if (stickyPostEvent == null || stickyPostEvent.isEmpty()) {
+            return;
+        }
+        stickyPostEvent.remove(postCode);
+    }
+
+    public void removeAllStickyEvent() {
+        if (stickyPostEvent == null || stickyPostEvent.isEmpty()) {
+            return;
+        }
+        stickyPostEvent.clear();
+    }
+
+    private void getEventAndPost(int postKey, Object event, Map<Integer, Map<Integer, List<InterBean>>> mapEvent) {
+        if (event == null || mapEvent == null || mapEvent.size() == 0) {
+            return;
+        }
+        for (Integer integer : mapEvent.keySet()) {
+            if (integer != postKey) {
+                continue;
+            }
+            Map<Integer, List<InterBean>> integerListMap = mapEvent.get(integer);
+            if (integerListMap == null) {
+                continue;
+            }
+            for (List<InterBean> value : integerListMap.values()) {
+                if (value == null || value.isEmpty()) {
+                    continue;
+                }
+                for (InterBean bean : value) {
+                    if (bean == null || bean.busCallback == null) {
+                        continue;
+                    }
+                    bean.busCallback.accept(event);
+                }
+            }
+        }
+    }
+
+    /*取消某个对象下的事件*/
+    public void unSubscribe(Object object) {
+        if (object == null) {
+            return;
+        }
+        if (needRemoveEvent == null || needRemoveEvent.size() == 0) {
+            return;
+        }
+        int registerCode = object.hashCode();
+        List<InterBean> interBeans = needRemoveEvent.remove(registerCode);
+        if (interBeans == null || interBeans.isEmpty()) {
+            return;
+        }
+        /*获取注册到某个object下的event*/
+        for (InterBean bean : interBeans) {
+            /*移除单一事件*/
+            removeSingleEvent(registerCode, bean.postKey);
+            /*移除其他事件*/
+            removeEvent(registerCode, bean);
+            /*移除临时保存的粘性事件对象*/
+            removeSticky(bean.postKey);
+        }
+        interBeans.clear();
+    }
+
+    /*取消所有订阅的事件+移除所有粘性事件*/
+    public void unSubscribeAll() {
+        if (needRemoveEvent == null || needRemoveEvent.size() == 0) {
+            return;
+        }
+        for (List<InterBean> item : needRemoveEvent.values()) {
+            if (item == null || item.isEmpty()) {
+                continue;
+            }
+            for (InterBean bean : item) {
+                /*移除单一事件*/
+                removeSingleEvent(REMOVE_ALL_FLAG, bean.postKey);
+                /*移除其他事件*/
+                removeEvent(REMOVE_ALL_FLAG, bean);
+                /*移除临时保存的粘性事件对象*/
+                removeAllStickyEvent();
+            }
+        }
+        needRemoveEvent.clear();
+    }
+
+    /*移除普通事件和粘性事件*/
+    private void removeEvent(int unSubscribeCode, InterBean bean) {
+        if (bean == null) {
+            return;
+        }
+        boolean isSticky = bean.isStickyEvent;
+        Map<Integer, List<InterBean>> integerListMap;
+        if (isSticky) {
+            integerListMap = mapStickyEvent.get(bean.postKey);
+        } else {
+            integerListMap = mapEvent.get(bean.postKey);
+        }
+        if (integerListMap == null || integerListMap.isEmpty()) {
+            return;
+        }
+        if (unSubscribeCode == REMOVE_ALL_FLAG) {
+            for (List<InterBean> lastItem : integerListMap.values()) {
+                if (lastItem == null || lastItem.isEmpty()) {
+                    continue;
+                }
+                lastItem.clear();
+            }
+            integerListMap.clear();
+            return;
+        }
+        List<InterBean> remove = integerListMap.remove(unSubscribeCode);
+        if (remove != null) {
+            remove.clear();
         }
     }
 
 
+    /*移除单一事件*/
+    private void removeSingleEvent(int registerCode, int postCode) {
+        if (singleEvent == null || singleEvent.isEmpty()) {
+            return;
+        }
+        Map<Integer, InterBean> integerListMap = singleEvent.get(postCode);
+        if (integerListMap != null && !integerListMap.isEmpty()) {
+            integerListMap.remove(registerCode);
+        }
+        if (registerCode == REMOVE_ALL_FLAG) {
+            singleEvent.clear();
+        }
+    }
 }
