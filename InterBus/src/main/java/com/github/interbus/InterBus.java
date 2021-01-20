@@ -1,5 +1,7 @@
 package com.github.interbus;
 
+import android.text.TextUtils;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   created by android on 2019/4/8
  */
 public class InterBus {
-    private final int REMOVE_ALL_FLAG = -100;
+    private final String REMOVE_ALL_FLAG = "-100";
     private static InterBus bus;
     private Object[] objects = new Object[0];
     private Object[] objectSticky = new Object[0];
@@ -19,17 +21,17 @@ public class InterBus {
      * 因为可能存在不同act注册相同obj消息，所以第二个map以registercode为key,也方便后续的取消某个act里面的消息订阅
      * */
     /*普通消息event容器*/
-    private Map<Integer, Map<Integer, List<InterBean>>> mapEvent;
+    private Map<String, Map<String, List<InterBean>>> mapEvent;
     /*粘性消息event容器*/
-    private Map<Integer, Map<Integer, List<InterBean>>> mapStickyEvent;
+    private Map<String, Map<String, List<InterBean>>> mapStickyEvent;
     /*单一的消息，只保存注册的最后一个(或者最开始的一个)事件消息*/
-    private Map<Integer, Map<Integer, InterBean>> singleEvent;
+    private Map<String, Map<String, InterBean>> singleEvent;
     /*先保存发送的粘性事件,key为postCode*/
-    private Map<Integer, InterBean> stickyPostEvent;
+    private Map<String, InterBean> stickyPostEvent;
     /*
      *  key为registerCode，将event保存到list里面，方便后续取消注册时根据registerCode和postCode移除
      * */
-    private Map<Integer, List<InterBean>> needRemoveEvent;
+    private Map<String, List<InterBean>> needRemoveEvent;
 
 
     private InterBus() {
@@ -60,33 +62,33 @@ public class InterBus {
         if (object == null || clazz == null) {
             throw new IllegalStateException("setEvent(object,class,busCallback), object or class can not null");
         }
-        int postCode = clazz.getName().hashCode();
+        String postCode = clazz.getName().hashCode()+"";
         saveEvent(object, postCode, busCallback, false);
     }
 
-    public <T> void setEvent(Object object, int postKey, BusCallback<T> busCallback) {
+    public <T> void setEvent(Object object, String postKey, BusCallback<T> busCallback) {
         saveEvent(object, postKey, busCallback, false);
     }
 
     /**
      * 粘性事件
      */
-    public <T> void setStickyEvent(Object object, int postKey, BusCallback<T> busCallback) {
+    public <T> void setStickyEvent(Object object, String postKey, BusCallback<T> busCallback) {
         saveEvent(object, postKey, busCallback, true);
     }
     public <T> void setStickyEvent(Object object, Class<T> clazz, BusCallback<T> busCallback) {
         if (object == null || clazz == null) {
             throw new IllegalStateException("setStickyEvent(object,class,busCallback), object or class can not null");
         }
-        int postCode = clazz.getName().hashCode();
+        String postCode = clazz.getName().hashCode()+"";
         saveEvent(object, postCode, busCallback, true);
     }
 
-    private <T> void saveEvent(Object object, int postCode, BusCallback<T> busCallback, boolean isSticky) {
+    private <T> void saveEvent(Object object, String postCode, BusCallback<T> busCallback, boolean isSticky) {
         if (busCallback == null) {
             return;
         }
-        int registerCode = object.hashCode();
+        String registerCode = object.hashCode()+"";
 
         InterBean interBean = new InterBean(postCode, registerCode, isSticky, busCallback);
 
@@ -105,7 +107,7 @@ public class InterBus {
         addEventToRegisterGroup(registerCode, interBean);
     }
 
-    private void addEventToRegisterGroup(int registerCode, InterBean interBean) {
+    private void addEventToRegisterGroup(String registerCode, InterBean interBean) {
         synchronized (objectSticky) {
             /*将interbean也添加到这个容器中，方便unRegister时根据registerCode和postCode去移除*/
             List<InterBean> interBeans = needRemoveEvent.get(registerCode);
@@ -117,7 +119,7 @@ public class InterBus {
         }
     }
 
-    private InterBean checkHasEvent(int postCode) {
+    private InterBean checkHasEvent(String postCode) {
         if (stickyPostEvent == null || stickyPostEvent.isEmpty()) {
             return null;
         }
@@ -126,9 +128,9 @@ public class InterBus {
         return stickyEvent;
     }
 
-    private void saveEventToMap(Map<Integer, Map<Integer, List<InterBean>>> mapEvent, int postCode, int registerCode, InterBean interBean) {
+    private void saveEventToMap(Map<String, Map<String, List<InterBean>>> mapEvent, String postCode, String registerCode, InterBean interBean) {
         synchronized (objects) {
-            Map<Integer, List<InterBean>> integerListMap = mapEvent.get(postCode);
+            Map<String, List<InterBean>> integerListMap = mapEvent.get(postCode);
             if (integerListMap == null) {
                 integerListMap = new LinkedHashMap<>();
                 List<InterBean> interBeans = new ArrayList<>();
@@ -147,7 +149,7 @@ public class InterBus {
         }
     }
 
-    public void post(int postKey) {
+    public void post(String postKey) {
         post(postKey, postKey);
     }
 
@@ -155,22 +157,25 @@ public class InterBus {
         if (event == null) {
             return;
         }
-        int postKey = event.getClass().getName().hashCode();
+        String postKey = event.getClass().getName().hashCode()+"";
         post(postKey, event);
     }
 
-    public void post(int postKey, Object event) {
+    public void post(String postKey, Object event) {
+        if(TextUtils.isEmpty(postKey)){
+            return;
+        }
         /*发送单一事件*/
         getSingleEventAndPost(postKey, event);
         /*发送普通事件*/
         getEventAndPost(postKey, event, mapEvent);
     }
 
-    private void getSingleEventAndPost(int postKey, Object event) {
+    private void getSingleEventAndPost(String postKey, Object event) {
         if (singleEvent == null || singleEvent.isEmpty()) {
             return;
         }
-        Map<Integer, InterBean> integerInterBeanMap = singleEvent.get(postKey);
+        Map<String, InterBean> integerInterBeanMap = singleEvent.get(postKey);
         if (integerInterBeanMap == null || integerInterBeanMap.isEmpty()) {
             return;
         }
@@ -182,19 +187,22 @@ public class InterBus {
         }
     }
 
-    public void postSticky(int postKey) {
+    public void postSticky(String postKey) {
         postSticky(postKey, postKey);
     }
     public void postSticky(Object event) {
         if (event == null) {
             return;
         }
-        int postKey = event.getClass().getName().hashCode();
+        String postKey = event.getClass().getName().hashCode()+"";
         postSticky(postKey, event);
     }
 
-    public void postSticky(int postKey, Object event) {
-        InterBean interBean = new InterBean(postKey, 0, true, null);
+    public void postSticky(String postKey, Object event) {
+        if(TextUtils.isEmpty(postKey)){
+            return;
+        }
+        InterBean interBean = new InterBean(postKey, "0", true, null);
         interBean.stickEventObj = event;
         stickyPostEvent.put(postKey, interBean);
 
@@ -207,34 +215,34 @@ public class InterBus {
     /**
      * 单一普通事件
      */
-    public <T> void setSingleEvent(Object object,int postKey, BusCallback<T> busCallback) {
+    public <T> void setSingleEvent(Object object,String postKey, BusCallback<T> busCallback) {
         setSingleEvent(object, postKey, true, busCallback);
     }
     public <T> void setSingleEvent(Object object, Class<T> clazz, BusCallback<T> busCallback) {
         setSingleEvent(object, clazz, true, busCallback);
     }
 
-    public <T> void setSingleEvent(Object object, int postKey, boolean useLastEvent, BusCallback<T> busCallback) {
+    public <T> void setSingleEvent(Object object, String postKey, boolean useLastEvent, BusCallback<T> busCallback) {
         saveSingleEvent(object, postKey, busCallback, useLastEvent);
     }
     public <T> void setSingleEvent(Object object, Class<T> clazz, boolean useLastEvent, BusCallback<T> busCallback) {
         if (object == null || clazz == null) {
             throw new IllegalStateException("setSingleEvent(object,class,busCallback), object or class can not null");
         }
-        int postCode = clazz.getName().hashCode();
+        String postCode = clazz.getName().hashCode()+"";
         saveSingleEvent(object, postCode, busCallback, useLastEvent);
     }
 
-    private <T> void saveSingleEvent(Object object, int postKey, BusCallback<T> busCallback, boolean useLastEvent) {
+    private <T> void saveSingleEvent(Object object, String postKey, BusCallback<T> busCallback, boolean useLastEvent) {
         if (busCallback == null) {
             return;
         }
         //如果有多次相同的object注册，只用最后注册的event，需要覆盖
-        int registerCode = object.hashCode();
+        String registerCode = object.hashCode()+"";
 
         InterBean interBean = new InterBean(postKey, registerCode, false, busCallback);
 
-        Map<Integer, InterBean> integerInterBeanMap = singleEvent.get(postKey);
+        Map<String, InterBean> integerInterBeanMap = singleEvent.get(postKey);
         if (!useLastEvent && integerInterBeanMap != null && !integerInterBeanMap.isEmpty()) {
             //如果有多次相同的object注册，只用最开始注册的event，则不覆盖添加
             return;
@@ -254,7 +262,7 @@ public class InterBus {
         if (event == null) {
             return;
         }
-        int postCode = event.getClass().getName().hashCode();
+        String postCode = event.getClass().getName().hashCode()+"";
         removeSticky(postCode);
     }
 
@@ -262,12 +270,15 @@ public class InterBus {
         if (clazz == null) {
             return;
         }
-        int postCode = clazz.getName().hashCode();
+        String postCode = clazz.getName().hashCode()+"";
         removeSticky(postCode);
     }
 
-    private void removeSticky(int postCode) {
+    private void removeSticky(String postCode) {
         if (stickyPostEvent == null || stickyPostEvent.isEmpty()) {
+            return;
+        }
+        if(TextUtils.isEmpty(postCode)){
             return;
         }
         stickyPostEvent.remove(postCode);
@@ -280,15 +291,15 @@ public class InterBus {
         stickyPostEvent.clear();
     }
 
-    private void getEventAndPost(int postKey, Object event, Map<Integer, Map<Integer, List<InterBean>>> mapEvent) {
+    private void getEventAndPost(String postKey, Object event, Map<String, Map<String, List<InterBean>>> mapEvent) {
         if (event == null || mapEvent == null || mapEvent.size() == 0) {
             return;
         }
-        for (Integer integer : mapEvent.keySet()) {
-            if (integer != postKey) {
+        for (String integer : mapEvent.keySet()) {
+            if (!TextUtils.equals(integer, postKey)) {
                 continue;
             }
-            Map<Integer, List<InterBean>> integerListMap = mapEvent.get(integer);
+            Map<String, List<InterBean>> integerListMap = mapEvent.get(integer);
             if (integerListMap == null) {
                 continue;
             }
@@ -314,7 +325,7 @@ public class InterBus {
         if (needRemoveEvent == null || needRemoveEvent.size() == 0) {
             return;
         }
-        int registerCode = object.hashCode();
+        String registerCode = object.hashCode()+"";
         List<InterBean> interBeans = needRemoveEvent.remove(registerCode);
         if (interBeans == null || interBeans.isEmpty()) {
             return;
@@ -353,12 +364,15 @@ public class InterBus {
     }
 
     /*移除普通事件和粘性事件*/
-    private void removeEvent(int unSubscribeCode, InterBean bean) {
+    private void removeEvent(String unSubscribeCode, InterBean bean) {
         if (bean == null) {
             return;
         }
+        if(TextUtils.isEmpty(unSubscribeCode)){
+            return;
+        }
         boolean isSticky = bean.isStickyEvent;
-        Map<Integer, List<InterBean>> integerListMap;
+        Map<String, List<InterBean>> integerListMap;
         if (isSticky) {
             integerListMap = mapStickyEvent.get(bean.postKey);
         } else {
@@ -385,15 +399,18 @@ public class InterBus {
 
 
     /*移除单一事件*/
-    private void removeSingleEvent(int registerCode, int postCode) {
+    private void removeSingleEvent(String registerCode, String postCode) {
+        if(TextUtils.isEmpty(registerCode)){
+            return;
+        }
         if (singleEvent == null || singleEvent.isEmpty()) {
             return;
         }
-        Map<Integer, InterBean> integerListMap = singleEvent.get(postCode);
+        Map<String, InterBean> integerListMap = singleEvent.get(postCode);
         if (integerListMap != null && !integerListMap.isEmpty()) {
             integerListMap.remove(registerCode);
         }
-        if (registerCode == REMOVE_ALL_FLAG) {
+        if (REMOVE_ALL_FLAG.equals(registerCode) ) {
             singleEvent.clear();
         }
     }
