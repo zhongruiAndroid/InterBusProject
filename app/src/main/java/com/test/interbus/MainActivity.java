@@ -9,6 +9,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 
 import com.github.interbus.BusCallback;
+import com.github.interbus.BusResult;
 import com.github.interbus.InterBus;
 import com.test.interbus.test.BaseObj;
 import com.test.interbus.test.TestObj;
@@ -87,7 +88,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
     private void test() {
         InterBus.get().setEvent("1", List.class, new BusCallback<List>() {
             @Override
-            public void accept(List event) {
+            public void accept(List event, BusResult busResult) {
                 Log.i("=====","=====accept");
             }
         });
@@ -105,7 +106,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                 if (isChecked) {
                     InterBus.get().setEvent(this, TestEvent.class, new BusCallback<TestEvent>() {
                         @Override
-                        public void accept(TestEvent event) {
+                        public void accept(TestEvent event, BusResult busResult) {
                             cbSetEvent1.setText(cbSetEvent1.getTag() + "--收到消息:" + event.str);
                             Log.i("====", "====interBean1==" + event.str);
                         }
@@ -121,7 +122,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                 if (isChecked) {
                     InterBus.get().setEvent(this, TestEvent.class, new BusCallback<TestEvent>() {
                         @Override
-                        public void accept(TestEvent event) {
+                        public void accept(TestEvent event, BusResult busResult) {
                             cbSetEvent2.setText(cbSetEvent2.getTag() + "--收到消息:" + event.str);
                             Log.i("====", "====interBean2==" + event.str);
                         }
@@ -137,7 +138,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                 if (isChecked) {
                     InterBus.get().setEvent(this, TestEvent2.class, new BusCallback<TestEvent2>() {
                         @Override
-                        public void accept(TestEvent2 event) {
+                        public void accept(TestEvent2 event, BusResult busResult) {
                             cbSetEvent3.setText(cbSetEvent3.getTag() + "--收到消息:" + event.str);
                             Log.i("====", "====interBean3==" + event.str);
                         }
@@ -155,7 +156,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                     cbSetEventSticky1.setText("取消订阅Sticky1");
                     InterBus.get().setStickyEvent(this, TestEvent.class, new BusCallback<TestEvent>() {
                         @Override
-                        public void accept(TestEvent event) {
+                        public void accept(TestEvent event, BusResult busResult) {
                             cbSetEventSticky1.setText(cbSetEventSticky1.getTag() + "--收到消息:" + event.str);
                             Log.i("====", "====interBean1==" + event.str);
                         }
@@ -171,7 +172,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                     cbSetEventSticky2.setText("取消订阅Sticky1");
                     InterBus.get().setStickyEvent(this, TestEvent.class, new BusCallback<TestEvent>() {
                         @Override
-                        public void accept(TestEvent event) {
+                        public void accept(TestEvent event, BusResult busResult) {
                             cbSetEventSticky2.setText(cbSetEventSticky2.getTag() + "--收到消息:" + event.str);
                             Log.i("====", "====interBean1==" + event.str);
                         }
@@ -187,7 +188,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                     cbSetEventSticky3.setText("取消订阅Sticky1");
                     InterBus.get().setStickyEvent(this, TestEvent2.class, new BusCallback<TestEvent2>() {
                         @Override
-                        public void accept(TestEvent2 event) {
+                        public void accept(TestEvent2 event, BusResult busResult) {
                             cbSetEventSticky3.setText(cbSetEventSticky3.getTag() + "--收到消息:" + event.str);
                             Log.i("====", "====interBean1==" + event.str);
                         }

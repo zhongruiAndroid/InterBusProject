@@ -9,6 +9,7 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import com.github.interbus.BusCallback;
+import com.github.interbus.BusResult;
 import com.github.interbus.InterBus;
 
 import java.util.ArrayList;
@@ -64,7 +65,7 @@ public class SingleEventActivity extends AppCompatActivity implements View.OnCli
                 setText(listStr, tvTips);
                 InterBus.get().setSingleEvent(simpleEvent, EventBean.class, cbSingleType.isChecked(), new BusCallback<EventBean>() {
                     @Override
-                    public void accept(EventBean event) {
+                    public void accept(EventBean event, BusResult busResult) {
                         Log.i("=====", "===1=====<单一>普通事件:" + event.content);
                         addText(listStr, event.content);
                         setText(listStr, tvTips);
@@ -72,7 +73,7 @@ public class SingleEventActivity extends AppCompatActivity implements View.OnCli
                 });
                 InterBus.get().setSingleEvent(simpleEvent, EventBean.class, cbSingleType.isChecked(), new BusCallback<EventBean>() {
                     @Override
-                    public void accept(EventBean event) {
+                    public void accept(EventBean event, BusResult busResult) {
                         Log.i("=====", "===2=====<单一>普通事件:" + event.content);
                         addText(listStr, event.content);
                         setText(listStr, tvTips);
