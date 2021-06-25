@@ -3,6 +3,7 @@ package com.test.interbus.test;
 import android.util.Log;
 
 import com.github.interbus.BusCallback;
+import com.github.interbus.BusResult;
 import com.github.interbus.InterBus;
 
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ public class BaseObj<T> {
     public static void main(String[] args) {
         InterBus.get().setEvent("1", List.class, new BusCallback<List>() {
             @Override
-            public void accept(List event) {
+            public void accept(List event, BusResult busResult) {
                 Log.i("=====","=====accept");
             }
         });

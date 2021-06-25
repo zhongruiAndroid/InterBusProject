@@ -8,6 +8,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.github.interbus.BusCallback;
+import com.github.interbus.BusResult;
 import com.github.interbus.InterBus;
 import com.test.interbus.test.BaseObj;
 import com.test.interbus.test.TestObj;
@@ -33,7 +34,7 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         testObj(new BusCallback<int[]>() {
             @Override
-            public void accept(int[] event) {
+            public void accept(int[] event, BusResult busResult) {
 
             }
         });
@@ -110,13 +111,21 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btRegister:
                 addText(listStr,"订阅普通事件");
                 setText(listStr,tvTips);
+                InterBus.get().post("1", new BusResult<String>() {
+                    @Override
+                    public void result(String obj) {
+                        Log.i("btRegister",obj);
+                    }
+                });
                 InterBus.get().setEvent(simpleEvent, EventBean.class, new BusCallback<EventBean>() {
                     @Override
-                    public void accept(EventBean event) {
+                    public void accept(EventBean event, BusResult busResult) {
                         b+=1;
                         Log.i("=====",b+"=====普通事件:"+event.content);
                         addText(listStr,event.content);
                         setText(listStr,tvTips);
+
+                        busResult.result(b+"=====普通事件:"+event.content);
                     }
                 });
                 break;
@@ -124,7 +133,12 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
                 b=0;
                 addText(listStr,"发送普通事件");
                 setText(listStr,tvTips);
-                InterBus.get().post(new EventBean("普通消息来了"));
+                InterBus.get().post(new EventBean("普通消息来了"), new BusResult<String>() {
+                    @Override
+                    public void result(String obj) {
+                        Log.i("=====","发送普通事件result====="+obj);
+                    }
+                });
                 break;
             case R.id.btUnRegister:
                 InterBus.get().unSubscribe(simpleEvent);
@@ -145,11 +159,12 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
                 });*/
                 InterBus.get().setStickyEvent(stickyEvent, EventStickyBean.class, new BusCallback<EventStickyBean>() {
                     @Override
-                    public void accept(EventStickyBean event) {
+                    public void accept(EventStickyBean event, BusResult busResult) {
                         a+=1;
                         Log.i("=====",a+"=====粘性事件:"+event.content);
                         addText(listStrSticky,event.content);
                         setText(listStrSticky,tvTipsSticky);
+                        busResult.result(a+"=====粘性事件:"+event.content);
                     }
                 });
                 break;
@@ -158,7 +173,12 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
                 addText(listStrSticky,"发送粘性事件");
                 setText(listStrSticky,tvTipsSticky);
 //                InterBus.get().post(new EventBean("粘性消息来了"));
-                InterBus.get().postSticky(new EventStickyBean("粘性消息来了"));
+                InterBus.get().postSticky(new EventStickyBean("粘性消息来了"), new BusResult() {
+                    @Override
+                    public void result(Object obj) {
+                        Log.i("=====","发送粘性事件result====="+obj);
+                    }
+                });
                 break;
             case R.id.btUnRegisterSticky:
                 InterBus.get().unSubscribe(stickyEvent);
