@@ -3,9 +3,12 @@ package com.github.interbus;
 import android.text.TextUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /***
@@ -195,7 +198,14 @@ public class InterBus {
         if (integerInterBeanMap == null || integerInterBeanMap.isEmpty()) {
             return;
         }
-        for (InterBean bean : integerInterBeanMap.values()) {
+        Collection<InterBean> values = integerInterBeanMap.values();
+        if(values==null){
+            return;
+        }
+        /*这里不用for，因为可能在外部的accept回调里面有做删除操作*/
+        Iterator<InterBean> iterator = values.iterator();
+        while (iterator.hasNext()){
+            InterBean bean = iterator.next();
             if (bean == null || bean.busCallback == null) {
                 continue;
             }
@@ -341,7 +351,16 @@ public class InterBus {
         if (event == null || mapEvent == null || mapEvent.size() == 0) {
             return;
         }
-        for (String integer : mapEvent.keySet()) {
+        Set<String> strings = mapEvent.keySet();
+        if(strings==null){
+            return;
+        }
+        Iterator<String> iterator = strings.iterator();
+        if(iterator==null){
+            return;
+        }
+        while (iterator.hasNext()){
+            String integer = iterator.next();
             if (!TextUtils.equals(integer, postKey)) {
                 continue;
             }
@@ -349,11 +368,15 @@ public class InterBus {
             if (integerListMap == null) {
                 continue;
             }
-            for (List<InterBean> value : integerListMap.values()) {
+            Iterator<List<InterBean>> integerListMapIterator = integerListMap.values().iterator();
+            while (integerListMapIterator.hasNext()){
+                List<InterBean> value = integerListMapIterator.next();
                 if (value == null || value.isEmpty()) {
                     continue;
                 }
-                for (InterBean bean : value) {
+                Iterator<InterBean> interBeanIterator = value.iterator();
+                while (interBeanIterator.hasNext()){
+                    InterBean bean = interBeanIterator.next();
                     if (bean == null || bean.busCallback == null) {
                         continue;
                     }
@@ -368,7 +391,9 @@ public class InterBus {
                     bean.busCallback.accept(event, busResult);
                 }
             }
+
         }
+
     }
 
     /*取消某个对象下的事件*/
@@ -385,7 +410,9 @@ public class InterBus {
             return;
         }
         /*获取注册到某个object下的event*/
-        for (InterBean bean : interBeans) {
+        Iterator<InterBean> iterator = interBeans.iterator();
+        while (iterator.hasNext()){
+            InterBean bean = iterator.next();
             /*移除单一事件*/
             removeSingleEvent(registerCode, bean.postKey);
             /*移除其他事件*/
@@ -393,6 +420,7 @@ public class InterBus {
             /*移除临时保存的粘性事件对象*/
             removeSticky(bean.postKey);
         }
+
         interBeans.clear();
     }
 
@@ -401,11 +429,15 @@ public class InterBus {
         if (needRemoveEvent == null || needRemoveEvent.size() == 0) {
             return;
         }
-        for (List<InterBean> item : needRemoveEvent.values()) {
+        Iterator<List<InterBean>> iterator = needRemoveEvent.values().iterator();
+        while (iterator.hasNext()){
+            List<InterBean> item = iterator.next();
             if (item == null || item.isEmpty()) {
                 continue;
             }
-            for (InterBean bean : item) {
+            Iterator<InterBean> interBeanIterator = item.iterator();
+            while (interBeanIterator.hasNext()){
+                InterBean bean = interBeanIterator.next();
                 /*移除单一事件*/
                 removeSingleEvent(REMOVE_ALL_FLAG, bean.postKey);
                 /*移除其他事件*/
@@ -414,6 +446,7 @@ public class InterBus {
                 removeAllStickyEvent();
             }
         }
+
         needRemoveEvent.clear();
     }
 
@@ -436,7 +469,9 @@ public class InterBus {
             return;
         }
         if (unSubscribeCode == REMOVE_ALL_FLAG) {
-            for (List<InterBean> lastItem : integerListMap.values()) {
+            Iterator<List<InterBean>> iterator = integerListMap.values().iterator();
+            while (iterator.hasNext()){
+                List<InterBean> lastItem = iterator.next();
                 if (lastItem == null || lastItem.isEmpty()) {
                     continue;
                 }
