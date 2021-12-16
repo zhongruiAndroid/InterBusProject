@@ -8,10 +8,12 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.Assert.*;
 
@@ -95,5 +97,22 @@ public class ExampleUnitTest {
         System.out.println(TestObj.class.getSuperclass());
         System.out.println(TestObj.class.getGenericSuperclass());
         System.out.println(TestObj.class.getGenericInterfaces());
+    }
+    @Test
+    public void asdf() {
+        CopyOnWriteArrayList<Object> a=new CopyOnWriteArrayList<Object>();
+        a.add("1");
+        a.add("a");
+        a.add("2");
+        a.add("b");
+        a.add("3");
+        a.add("c");
+        a.add("1");
+        a.add("11");
+        Iterator<Object> iterator = a.iterator();
+        while (iterator.hasNext()){
+            Object next = iterator.next();
+            System.out.println(next+"=======");
+        }
     }
 }

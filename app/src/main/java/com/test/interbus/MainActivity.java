@@ -11,10 +11,7 @@ import android.widget.CompoundButton;
 import com.github.interbus.BusCallback;
 import com.github.interbus.BusResult;
 import com.github.interbus.InterBus;
-import com.test.interbus.test.BaseObj;
-import com.test.interbus.test.TestObj;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -104,7 +101,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
         switch (buttonView.getId()) {
             case R.id.cbSetEvent1:
                 if (isChecked) {
-                    InterBus.get().setEvent(this, TestEvent.class, new BusCallback<TestEvent>() {
+                    InterBus.get().setEvent("cbSetEvent1", TestEvent.class, new BusCallback<TestEvent>() {
                         @Override
                         public void accept(TestEvent event, BusResult busResult) {
                             cbSetEvent1.setText(cbSetEvent1.getTag() + "--收到消息:" + event.str);
@@ -114,13 +111,14 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                     cbSetEvent1.setTag("取消订阅1");
                     cbSetEvent1.setText("取消订阅1");
                 } else {
+                    InterBus.get().unSubscribe("cbSetEvent1");
                     cbSetEvent1.setText("订阅1");
                     cbSetEvent1.setTag("订阅1");
                 }
                 break;
             case R.id.cbSetEvent2:
                 if (isChecked) {
-                    InterBus.get().setEvent(this, TestEvent.class, new BusCallback<TestEvent>() {
+                    InterBus.get().setEvent("cbSetEvent2", TestEvent.class, new BusCallback<TestEvent>() {
                         @Override
                         public void accept(TestEvent event, BusResult busResult) {
                             cbSetEvent2.setText(cbSetEvent2.getTag() + "--收到消息:" + event.str);
@@ -130,13 +128,14 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                     cbSetEvent2.setTag( "取消订阅1");
                     cbSetEvent2.setText("取消订阅1");
                 } else {
+                    InterBus.get().unSubscribe("cbSetEvent2");
                     cbSetEvent2.setText("订阅1");
                     cbSetEvent2.setTag("订阅1");
                 }
                 break;
             case R.id.cbSetEvent3:
                 if (isChecked) {
-                    InterBus.get().setEvent(this, TestEvent2.class, new BusCallback<TestEvent2>() {
+                    InterBus.get().setEvent("cbSetEvent3", TestEvent2.class, new BusCallback<TestEvent2>() {
                         @Override
                         public void accept(TestEvent2 event, BusResult busResult) {
                             cbSetEvent3.setText(cbSetEvent3.getTag() + "--收到消息:" + event.str);
@@ -146,6 +145,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                     cbSetEvent3.setText("取消订阅2");
                     cbSetEvent3.setTag("取消订阅2");
                 } else {
+                    InterBus.get().unSubscribe("cbSetEvent3");
                     cbSetEvent3.setText("订阅2");
                     cbSetEvent3.setTag("订阅1");
                 }
@@ -154,7 +154,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                 if (isChecked) {
                     cbSetEventSticky1.setTag("取消订阅Sticky1");
                     cbSetEventSticky1.setText("取消订阅Sticky1");
-                    InterBus.get().setStickyEvent(this, TestEvent.class, new BusCallback<TestEvent>() {
+                    InterBus.get().setStickyEvent("cbSetEventSticky1", TestEvent.class, new BusCallback<TestEvent>() {
                         @Override
                         public void accept(TestEvent event, BusResult busResult) {
                             cbSetEventSticky1.setText(cbSetEventSticky1.getTag() + "--收到消息:" + event.str);
@@ -162,6 +162,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                         }
                     });
                 } else {
+                    InterBus.get().unSubscribe("cbSetEventSticky1");
                     cbSetEventSticky1.setText("订阅Sticky1");
                     cbSetEventSticky1.setTag("订阅Sticky1");
                 }
@@ -170,7 +171,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                 if (isChecked) {
                     cbSetEventSticky2.setTag("取消订阅Sticky1");
                     cbSetEventSticky2.setText("取消订阅Sticky1");
-                    InterBus.get().setStickyEvent(this, TestEvent.class, new BusCallback<TestEvent>() {
+                    InterBus.get().setStickyEvent("cbSetEventSticky2", TestEvent.class, new BusCallback<TestEvent>() {
                         @Override
                         public void accept(TestEvent event, BusResult busResult) {
                             cbSetEventSticky2.setText(cbSetEventSticky2.getTag() + "--收到消息:" + event.str);
@@ -178,6 +179,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                         }
                     });
                 } else {
+                    InterBus.get().unSubscribe("cbSetEventSticky2");
                     cbSetEventSticky2.setText("订阅Sticky1");
                     cbSetEventSticky2.setTag("订阅Sticky1");
                 }
@@ -186,7 +188,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                 if (isChecked) {
                     cbSetEventSticky3.setTag("取消订阅Sticky1");
                     cbSetEventSticky3.setText("取消订阅Sticky1");
-                    InterBus.get().setStickyEvent(this, TestEvent2.class, new BusCallback<TestEvent2>() {
+                    InterBus.get().setStickyEvent("cbSetEventSticky3", TestEvent2.class, new BusCallback<TestEvent2>() {
                         @Override
                         public void accept(TestEvent2 event, BusResult busResult) {
                             cbSetEventSticky3.setText(cbSetEventSticky3.getTag() + "--收到消息:" + event.str);
@@ -194,6 +196,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                         }
                     });
                 } else {
+                    InterBus.get().unSubscribe("cbSetEventSticky3");
                     cbSetEventSticky3.setText("订阅Sticky1");
                     cbSetEventSticky3.setTag("订阅Sticky1");
                 }
