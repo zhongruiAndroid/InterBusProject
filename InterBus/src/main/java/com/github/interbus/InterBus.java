@@ -23,7 +23,7 @@ public class InterBus {
     /*普通消息event容器*/
     private Map<String, CopyOnWriteArrayList<InterBean>> mapEvent;
     /*粘性消息event容器*/
-    private Map<String, CopyOnWriteArrayList<InterBean>> mapStickyEvent;
+//    private Map<String, CopyOnWriteArrayList<InterBean>> mapStickyEvent;
     /*单一的消息，key为postCode只保存注册的最后一个(或者最开始的一个)事件消息*/
     private Map<String, InterBean> singleEvent;
     /*先保存发送的粘性事件,key为postCode*/
@@ -36,7 +36,7 @@ public class InterBus {
 
     private InterBus() {
         mapEvent = new ConcurrentHashMap<>();
-        mapStickyEvent = new ConcurrentHashMap();
+//        mapStickyEvent = new ConcurrentHashMap();
         singleEvent = new ConcurrentHashMap();
 
         stickyPostEvent = new ConcurrentHashMap();
@@ -73,6 +73,7 @@ public class InterBus {
     /**
      * 粘性事件
      */
+/*
     public <T> void setStickyEvent(Object object, String postKey, BusCallback<T> busCallback) {
         saveEvent(object, postKey, busCallback, true);
     }
@@ -84,6 +85,7 @@ public class InterBus {
         String postCode = clazz.getName().hashCode() + "";
         saveEvent(object, postCode, busCallback, true);
     }
+*/
 
     private <T> void saveEvent(Object object, String postCode, BusCallback<T> busCallback, boolean isSticky) {
         if (busCallback == null) {
@@ -93,8 +95,14 @@ public class InterBus {
 
         InterBean interBean = new InterBean(postCode, registerCode, isSticky, busCallback);
 
-        if (isSticky) {
-            /*检查是否已经发送过粘性事件*/
+        /*检查是否已经发送过粘性事件*/
+        InterBean hasEvent = checkHasEvent(postCode);
+        if (hasEvent != null) {
+            busCallback.accept((T) hasEvent.stickEventObj, hasEvent.busResult);
+        }
+
+        /*if (isSticky) {
+            *//*检查是否已经发送过粘性事件*//*
             InterBean hasEvent = checkHasEvent(postCode);
             if (hasEvent != null) {
                 busCallback.accept((T) hasEvent.stickEventObj, hasEvent.busResult);
@@ -102,7 +110,8 @@ public class InterBus {
             saveEventToMap(mapStickyEvent, postCode, registerCode, interBean);
         } else {
             saveEventToMap(mapEvent, postCode, registerCode, interBean);
-        }
+        }*/
+        saveEventToMap(mapEvent, postCode, registerCode, interBean);
 
         /*将interbean也添加到这个容器中，方便unRegister时根据registerCode和postCode去移除*/
         addEventToRegisterGroup(registerCode, interBean);
@@ -236,7 +245,8 @@ public class InterBus {
         /*发送单一事件*/
         getSingleEventAndPost(postKey, event, busResult);
         /*发送粘性事件*/
-        getEventAndPost(postKey, event, mapStickyEvent, busResult);
+//        getEventAndPost(postKey, event, mapStickyEvent, busResult);
+        getEventAndPost(postKey, event, mapEvent, busResult);
     }
 
     /****************************************************************************************/
@@ -288,7 +298,7 @@ public class InterBus {
             return;
         }
         String postCode = event.getClass().getName().hashCode() + "";
-        removeSticky(postCode);
+        removeStickyEvent(postCode);
     }
 
     public void removeStickyEvent(Class clazz) {
@@ -296,10 +306,10 @@ public class InterBus {
             return;
         }
         String postCode = clazz.getName().hashCode() + "";
-        removeSticky(postCode);
+        removeStickyEvent(postCode);
     }
 
-    private void removeSticky(String postCode) {
+    private void removeStickyEvent(String postCode) {
         if (stickyPostEvent == null || stickyPostEvent.isEmpty()) {
             return;
         }
@@ -381,7 +391,7 @@ public class InterBus {
             /*移除其他事件*/
             removeEvent(registerCode, bean);
             /*移除临时保存的粘性事件对象*/
-            removeSticky(bean.postKey);
+//            removeStickyEvent(bean.postKey);
         }
 
         interBeans.clear();
@@ -426,10 +436,11 @@ public class InterBus {
         boolean isSticky = bean.isStickyEvent;
         CopyOnWriteArrayList<InterBean> integerListMap;
         if (isSticky) {
-            integerListMap = mapStickyEvent.get(bean.postKey);
+//            integerListMap = mapStickyEvent.get(bean.postKey);
         } else {
-            integerListMap = mapEvent.get(bean.postKey);
+//            integerListMap = mapEvent.get(bean.postKey);
         }
+        integerListMap = mapEvent.get(bean.postKey);
         if (integerListMap == null || integerListMap.isEmpty()) {
             return;
         }

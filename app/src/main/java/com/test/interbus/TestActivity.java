@@ -157,7 +157,7 @@ public class TestActivity extends AppCompatActivity implements View.OnClickListe
                         setText(listStrSticky,tvTipsSticky);
                     }
                 });*/
-                InterBus.get().setStickyEvent(stickyEvent, EventStickyBean.class, new BusCallback<EventStickyBean>() {
+                InterBus.get().setEvent(stickyEvent, EventStickyBean.class, new BusCallback<EventStickyBean>() {
                     @Override
                     public void accept(EventStickyBean event, BusResult busResult) {
                         a+=1;

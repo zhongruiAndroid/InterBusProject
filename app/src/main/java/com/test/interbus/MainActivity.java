@@ -154,7 +154,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                 if (isChecked) {
                     cbSetEventSticky1.setTag("取消订阅Sticky1");
                     cbSetEventSticky1.setText("取消订阅Sticky1");
-                    InterBus.get().setStickyEvent("cbSetEventSticky1", TestEvent.class, new BusCallback<TestEvent>() {
+                    InterBus.get().setEvent("cbSetEventSticky1", TestEvent.class, new BusCallback<TestEvent>() {
                         @Override
                         public void accept(TestEvent event, BusResult busResult) {
                             cbSetEventSticky1.setText(cbSetEventSticky1.getTag() + "--收到消息:" + event.str);
@@ -171,7 +171,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                 if (isChecked) {
                     cbSetEventSticky2.setTag("取消订阅Sticky1");
                     cbSetEventSticky2.setText("取消订阅Sticky1");
-                    InterBus.get().setStickyEvent("cbSetEventSticky2", TestEvent.class, new BusCallback<TestEvent>() {
+                    InterBus.get().setEvent("cbSetEventSticky2", TestEvent.class, new BusCallback<TestEvent>() {
                         @Override
                         public void accept(TestEvent event, BusResult busResult) {
                             cbSetEventSticky2.setText(cbSetEventSticky2.getTag() + "--收到消息:" + event.str);
@@ -188,7 +188,7 @@ public class MainActivity extends BaseAct implements View.OnClickListener, Compo
                 if (isChecked) {
                     cbSetEventSticky3.setTag("取消订阅Sticky1");
                     cbSetEventSticky3.setText("取消订阅Sticky1");
-                    InterBus.get().setStickyEvent("cbSetEventSticky3", TestEvent2.class, new BusCallback<TestEvent2>() {
+                    InterBus.get().setEvent("cbSetEventSticky3", TestEvent2.class, new BusCallback<TestEvent2>() {
                         @Override
                         public void accept(TestEvent2 event, BusResult busResult) {
                             cbSetEventSticky3.setText(cbSetEventSticky3.getTag() + "--收到消息:" + event.str);
