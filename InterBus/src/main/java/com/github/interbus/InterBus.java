@@ -475,4 +475,7 @@ public class InterBus {
         }
         singleEvent.remove(postCode);
     }
+    public static String newRegisterCode(){
+        return new Object[0].hashCode()+"";
+    }
 }

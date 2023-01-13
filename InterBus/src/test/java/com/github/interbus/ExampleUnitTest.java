@@ -39,6 +39,13 @@ public class ExampleUnitTest {
         }
     }
     @Test
+    public void addffd() {
+        for (int i = 0; i < 8; i++) {
+            System.out.println(new Object[0].hashCode()+":===");
+        }
+
+    }
+    @Test
     public void addfd() {
         Map<Integer,String> map=new LinkedHashMap<>(1,0.3f,true);
         map.put(1,"1");
