@@ -1,11 +1,10 @@
 package com.github.interbus;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
-import android.view.View;
 
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,6 +14,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *   created by android on 2019/4/8
  */
 public class InterBus {
+    private static Handler handler;
+
+    public static Handler getHandler() {
+        if (handler == null) {
+            handler = new Handler(Looper.getMainLooper());
+        }
+        return handler;
+    }
+
     private final String REMOVE_ALL_FLAG = "-100";
     private static InterBus bus;
     /*
@@ -86,8 +94,7 @@ public class InterBus {
         saveEvent(object, postCode, busCallback, true);
     }
 */
-
-    private <T> void saveEvent(Object object, String postCode, BusCallback<T> busCallback, boolean isSticky) {
+    private <T> void saveEvent(Object object, String postCode, final BusCallback<T> busCallback, boolean isSticky) {
         if (busCallback == null) {
             return;
         }
@@ -96,13 +103,22 @@ public class InterBus {
         InterBean interBean = new InterBean(postCode, registerCode, isSticky, busCallback);
 
         /*检查是否已经发送过粘性事件*/
-        InterBean hasEvent = checkHasEvent(postCode);
+        final InterBean hasEvent = checkHasEvent(postCode);
         if (hasEvent != null) {
-            busCallback.accept((T) hasEvent.stickEventObj, hasEvent.busResult);
+            if (Looper.getMainLooper() == Looper.myLooper()) {
+                busCallback.accept((T) hasEvent.stickEventObj, hasEvent.busResult);
+            } else {
+                getHandler().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        busCallback.accept((T) hasEvent.stickEventObj, hasEvent.busResult);
+                    }
+                });
+            }
         }
 
         /*if (isSticky) {
-            *//*检查是否已经发送过粘性事件*//*
+         *//*检查是否已经发送过粘性事件*//*
             InterBean hasEvent = checkHasEvent(postCode);
             if (hasEvent != null) {
                 busCallback.accept((T) hasEvent.stickEventObj, hasEvent.busResult);
@@ -185,11 +201,11 @@ public class InterBus {
 
     /****************************************************************************************/
 
-    private void getSingleEventAndPost(String postKey, Object event, BusResult busResult) {
+    private void getSingleEventAndPost(String postKey, final Object event, BusResult busResult) {
         if (singleEvent == null || singleEvent.isEmpty()) {
             return;
         }
-        InterBean interBean = singleEvent.get(postKey);
+        final InterBean interBean = singleEvent.get(postKey);
         if (interBean == null || interBean.busCallback == null) {
             return;
         }
@@ -201,7 +217,17 @@ public class InterBus {
                 }
             };
         }
-        interBean.busCallback.accept(event, busResult);
+        if (Looper.getMainLooper() == Looper.myLooper()) {
+            interBean.busCallback.accept(event, busResult);
+        } else {
+            final BusResult finalBusResult = busResult;
+            getHandler().post(new Runnable() {
+                @Override
+                public void run() {
+                    interBean.busCallback.accept(event, finalBusResult);
+                }
+            });
+        }
     }
 
     /****************************************************************************************/
@@ -326,7 +352,20 @@ public class InterBus {
         stickyPostEvent.clear();
     }
 
-    private void getEventAndPost(String postKey, Object event, Map<String, CopyOnWriteArrayList<InterBean>> mapEvent, BusResult busResult) {
+    private void getEventAndPost(final String postKey, final Object event, final Map<String, CopyOnWriteArrayList<InterBean>> mapEvent, final BusResult busResult) {
+        if (Looper.getMainLooper() == Looper.myLooper()) {
+            getEventAndPostOnUi(postKey, event, mapEvent, busResult);
+        } else {
+            getHandler().post(new Runnable() {
+                @Override
+                public void run() {
+                    getEventAndPostOnUi(postKey, event, mapEvent, busResult);
+                }
+            });
+        }
+    }
+
+    private void getEventAndPostOnUi(String postKey, Object event, Map<String, CopyOnWriteArrayList<InterBean>> mapEvent, BusResult busResult) {
         if (event == null || mapEvent == null || mapEvent.size() == 0) {
             return;
         }
@@ -383,7 +422,7 @@ public class InterBus {
         Iterator<InterBean> iterator = interBeans.iterator();
         while (iterator.hasNext()) {
             InterBean bean = iterator.next();
-            if(bean==null){
+            if (bean == null) {
                 continue;
             }
             /*移除单一事件*/
@@ -411,7 +450,7 @@ public class InterBus {
             Iterator<InterBean> interBeanIterator = item.iterator();
             while (interBeanIterator.hasNext()) {
                 InterBean bean = interBeanIterator.next();
-                if(bean==null){
+                if (bean == null) {
                     continue;
                 }
                 /*移除单一事件*/
@@ -475,7 +514,8 @@ public class InterBus {
         }
         singleEvent.remove(postCode);
     }
-    public static String newRegisterCode(){
-        return new Object[0].hashCode()+"";
+
+    public static String newRegisterCode() {
+        return new Object[0].hashCode() + "";
     }
 }
